@@ -14,7 +14,7 @@ namespace GraphTest
         public Vertex[] Nodes;
         public Link[] Links;
 
-        public Graph(List<Node> nodes, List<Edge> edges)
+        public Graph(List<TaskNode> nodes, List<DirectedEdge> edges)
         {
             Nodes = new Vertex[nodes.Count];
             Links = new Link[edges.Count];
@@ -68,7 +68,7 @@ namespace GraphTest
 
     class DGMLWriter
     {       
-        public void Serialize(Tree tree, string xmlPath = "tree.dgml")
+        public void Serialize(TaskGraph tree, string xmlPath = "tree.dgml")
         {
             Graph graph = new Graph(tree.Nodes, tree.Edges);
 

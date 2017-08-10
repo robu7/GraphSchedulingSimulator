@@ -8,10 +8,65 @@ using System.Threading.Tasks;
 
 namespace GraphTest
 {
-    class Worker
+    class IdleSlot : ScheduleSlot
+    {
+        public IdleSlot(int start, int end, TaskNode nextTask) :base(start, end)
+        {
+
+            NextExecutableTask = nextTask;
+        }
+
+        //public override int StartTime { get; set; }
+        //public override int EndTime { get; set; }
+
+        //public int Size { get { return EndTime - StartTime; } }
+
+        /// <summary>
+        /// Contains the next task in line to be executed after this idleslot
+        /// </summary>
+        public TaskNode NextExecutableTask { get; set; }
+
+    }
+
+    class WorkSlot : ScheduleSlot
+    {
+        public TaskNode TaskToBeExecuted { get; }
+
+        public WorkSlot(int start, int end, TaskNode task) : base(start, end)
+        {
+            TaskToBeExecuted = task;
+        }
+
+    }
+
+    public class ScheduleSlot
+    {
+        public ScheduleSlot(int start, int end)
+        {
+            StartTime = start;
+            EndTime = end;
+        }
+        public int StartTime { get; set; }
+        public int EndTime { get; set; }
+
+        public virtual int Size { get { return EndTime - StartTime; } }
+    }
+
+    public class Worker
     {
         public int WorkerID { get; private set; }
-        private List<Node> taskList;
+        private List<ScheduleSlot> taskList;
+        public List<ScheduleSlot> FullSchedule { get { return taskList; } }
+        public IEnumerable<TaskNode> TaskList {
+            get {
+                foreach (var slot in taskList) {
+                    if(slot is WorkSlot) {
+                        yield return (slot as WorkSlot).TaskToBeExecuted;
+                    }
+                }
+                yield break;
+            }
+        }
         public int EarliestStartTime { get; set; }
         private ManualResetEvent readySignal;
 
@@ -20,22 +75,23 @@ namespace GraphTest
             WorkerID = ID;
             readySignal = waitSignal;
             EarliestStartTime = 0;
-            taskList = new List<Node>();
-    }
+            taskList = new List<ScheduleSlot>();
+        }
 
-        public void AddTask(Node task) { taskList.Add(task); }
+        public void AddTask(int start, int end, TaskNode task) { taskList.Add(new WorkSlot(start, end, task)); }
+        public void AddIdleTime(int start, int end, TaskNode nextTask) { taskList.Add(new IdleSlot(start, end, nextTask)); }
 
         public static void ExecuteTaskList(object o)
         {
             Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " started work");
             Worker worker = o as Worker;
-            List<Node> localList = worker.taskList;
+            var localList = worker.TaskList;
 
-            foreach (var item in localList)
+            foreach (var task in localList)
             {
-                while (!item.AreParentsDone) { }
-                item.Execute();
-                item.IsDone = true;
+                task.WaitForParentsToFinish();
+                task.Execute();
+                task.Status = BuildStatus.Executed;
             }
             worker.readySignal.Set();
             Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " just finished");
