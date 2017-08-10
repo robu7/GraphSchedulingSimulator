@@ -62,6 +62,13 @@ namespace GraphTest
             }            
         }
 
+        public void UpdateStatus(string statusUpdate)
+        {
+            //delegate {
+                Console.WriteLine(statusUpdate);
+            //}
+        }
+
         private static void Update(Object myObject, EventArgs myEventArgs)
         {
             for (int i = 0; i < 4; i++) {

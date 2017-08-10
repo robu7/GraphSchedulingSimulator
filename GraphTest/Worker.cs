@@ -84,12 +84,15 @@ namespace GraphTest
         public static void ExecuteTaskList(object o)
         {
             Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " started work");
-            Worker worker = o as Worker;
+            object[] tmp = o as object[];
+            Worker worker = tmp[0] as Worker;
+            SchedulerInfo infoDisplyer = tmp[1] as SchedulerInfo;
             var localList = worker.TaskList;
 
             foreach (var task in localList)
             {
                 task.WaitForParentsToFinish();
+                //infoDisplyer.UpdateStatus("Begin work on task: " + task.ID);
                 task.Execute();
                 task.Status = BuildStatus.Executed;
             }

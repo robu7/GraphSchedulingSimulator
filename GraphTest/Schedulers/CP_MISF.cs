@@ -39,21 +39,38 @@ namespace GraphTest.Schedulers
         int[] availableCores;
         private static int maxCores;
         Dictionary<int, TaskNode> coreToTask;
-        Dictionary<int, BranchWorker> workerCollection;
+        //Dictionary<int, BranchWorker> workerCollection;
         //List<BranchWorker> workerList;
 
         /// <summary>
         /// 
         /// </summary>
-        public Branch(List<TaskNode> readyList, int time, int depth, int cores, int[] selection = null)
+        public Branch(List<TaskNode> readyList, int time, int depth, int cores, int[] availCores, Dictionary<int, TaskNode> coreToTaskMapping, int[] selection = null)
         {
             this.readyList = readyList;
             this.depth = depth;
             this.currentTime = time;
             this.numberOfAvailableCores = cores;
             this.selectionPointer = new int[cores];
-            this.coreToTask = new Dictionary<int, TaskNode>();
-            this.availableCores = new int[numberOfAvailableCores];
+            this.coreToTask = coreToTaskMapping;
+            this.availableCores = availCores;
+            if(coreToTask == null) {
+                Init();               
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void Init()
+        {
+            coreToTask = new Dictionary<int, TaskNode>();
+            availableCores = new int[numberOfAvailableCores];
+
+            for (int i = 0; i < numberOfAvailableCores; i++) {
+                availableCores[0] = i;
+                coreToTask[i] = null;
+            }
 
         }
 
@@ -108,14 +125,23 @@ namespace GraphTest.Schedulers
                 readyListCopy.RemoveAt(0);
             }
 
-            int coreCount = coreToTask.Where(x => x.Value == null || x.Value.SimulatedExecutionTime <= earliestTaskFinishTime).Count();
+            //var coreCount = coreToTask.Where(x => x.Value == null || x.Value.SimulatedExecutionTime <= earliestTaskFinishTime).Count();
+            int coreCount = 0;
+            List<int> availableCores = new List<int>();
+            foreach (var item in coreToTask) {
+                if(item.Value == null || item.Value.SimulatedExecutionTime <= earliestTaskFinishTime) {
+                    ++coreCount;
+                    availableCores.Add(item.Key);
+                }
+            }
+
 
             if (readyListCopy.Count == 0)
                 Console.WriteLine("");
 
             readyListCopy.RemoveAll(x => x == null);
 
-            var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1,coreCount, backTrackingList[0]);       
+            var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1,coreCount, availableCores.ToArray(), coreToTask, backTrackingList[0]);       
 
             newBranch.GenerateBranchAlternatives();
 
@@ -162,7 +188,7 @@ namespace GraphTest.Schedulers
         public static Branch GenerateDummyStartNode(List<TaskNode> readyList, int cores)
         {
             maxCores = cores;
-            return new Branch(readyList, 0, 0, cores);
+            return new Branch(readyList, 0, 0, cores,null, null);
         }       
     }
 

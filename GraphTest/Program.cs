@@ -182,8 +182,10 @@ namespace GraphTest
 
             scheduler.ScheduleDAG(DAGgraph);
 
+            //var infoDisplayer = new SchedulerInfo(workerList);
+
             for (int i = 0; i < Settings.threadCount; i++) {
-                ThreadPool.QueueUserWorkItem(new WaitCallback(Worker.ExecuteTaskList), workerList[i]);
+                ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
             }
 
             new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
