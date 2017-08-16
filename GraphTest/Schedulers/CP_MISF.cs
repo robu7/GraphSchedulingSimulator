@@ -74,44 +74,50 @@ namespace GraphTest.Schedulers
 
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int ExpandBranch()
+        {
+            // Allocate tasks to proccesors using selection pointer
+            // and set allocated nodes to scheduled 
+            // and insert nodes which are now ready to be scheduled
+
+            foreach (var coreID in availableCores) {
+                coreToTask[coreID] = readyList[selectionPointer[coreID]];
+                AddNewReadyNodes(readyList, selectionPointer[coreID]);
+                readyList.RemoveAt(selectionPointer[coreID]);
+            }
+
+           
+            // Find the time where the earliest task is finished and
+            // compare with lower bound and best solution
+            // if higher then terminate branch
+
+            return 0;
+        }
+
+
         /// <summary>
         /// 
         /// </summary>
         public void GenerateBranchAlternatives()
         {
             // First determine how many idle nodes that should be available
-            int numberOfIdleNodes = 0;
-            if (numberOfAvailableCores == maxCores) {
-                numberOfIdleNodes = numberOfAvailableCores - 1;
-            } else
-                numberOfIdleNodes = numberOfAvailableCores;
+            int numberOfIdleNodes = GenerateIdleNodes(readyList);
 
-            for (int i = 0; i < numberOfIdleNodes; i++) {
-                readyList.Add(null);
-            }
 
-            var backTrackingList = new List<int[]>();
-
-            for (int i = 0; i <= readyList.Count - numberOfAvailableCores; i++) {
-                var selectionPointer = new int[numberOfAvailableCores];
-
-                for (int j = 0; j < numberOfAvailableCores; j++) {
-                    selectionPointer[j] = i + j;
-                }
-                backTrackingList.Add(selectionPointer);
-
-                var tmpSelectionPointer = (int[])selectionPointer.Clone();
-                for (int x = tmpSelectionPointer[numberOfAvailableCores - 1]; x < readyList.Count-1; x++) {
-                    tmpSelectionPointer[numberOfAvailableCores-1]++;
-                    backTrackingList.Add(tmpSelectionPointer);
-                    tmpSelectionPointer = (int[])tmpSelectionPointer.Clone();
-                }
-            }            
-            
+            // List which will contain branch alternatives 
+            List<int[]> backTrackingList = GenerateSelectionPointerAlternatives();
+ 
 
             var readyListCopy = readyList;
-            //while (backTrackingList.Count > 0) {
 
+            // Find the time where the earliest task is finished
+            // Change to include tasks in progress
+
+            // -----------------------------
             int earliestTaskFinishTime = FindEarliestTaskFinishTime(backTrackingList, 0);
 
             int[] taskIndexes = backTrackingList[0];
@@ -125,15 +131,27 @@ namespace GraphTest.Schedulers
                 readyListCopy.RemoveAt(0);
             }
 
-            //var coreCount = coreToTask.Where(x => x.Value == null || x.Value.SimulatedExecutionTime <= earliestTaskFinishTime).Count();
+            //--------------------------------
             int coreCount = 0;
             List<int> availableCores = new List<int>();
             foreach (var item in coreToTask) {
-                if(item.Value == null || item.Value.SimulatedExecutionTime <= earliestTaskFinishTime) {
+                if (item.Value == null || item.Value.SimulatedExecutionTime <= earliestTaskFinishTime) {
                     ++coreCount;
                     availableCores.Add(item.Key);
                 }
             }
+
+            while (backTrackingList.Count > 0) {
+                var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1, coreCount, availableCores.ToArray(), coreToTask, backTrackingList[0]);
+                newBranch.ExpandBranch();
+            }
+
+
+
+   
+
+            //var coreCount = coreToTask.Where(x => x.Value == null || x.Value.SimulatedExecutionTime <= earliestTaskFinishTime).Count();
+           
 
 
             if (readyListCopy.Count == 0)
@@ -141,13 +159,59 @@ namespace GraphTest.Schedulers
 
             readyListCopy.RemoveAll(x => x == null);
 
-            var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1,coreCount, availableCores.ToArray(), coreToTask, backTrackingList[0]);       
 
-            newBranch.GenerateBranchAlternatives();
+
+            //newBranch.GenerateBranchAlternatives();
 
             //}
 
 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private List<int[]> GenerateSelectionPointerAlternatives()
+        {
+            var backTrackingList = new List<int[]>();
+
+            for (int i = 0; i <= readyList.Count - numberOfAvailableCores; i++) {
+                var selectionPointer = new int[numberOfAvailableCores];
+
+                for (int j = 0; j < numberOfAvailableCores; j++) {
+                    selectionPointer[j] = i + j;
+                }
+                backTrackingList.Add(selectionPointer);
+
+                var tmpSelectionPointer = (int[])selectionPointer.Clone();
+                for (int x = tmpSelectionPointer[numberOfAvailableCores - 1]; x < readyList.Count - 1; x++) {
+                    tmpSelectionPointer[numberOfAvailableCores - 1]++;
+                    backTrackingList.Add(tmpSelectionPointer);
+                    tmpSelectionPointer = (int[])tmpSelectionPointer.Clone();
+                }
+            }
+
+            return backTrackingList;
+        }
+
+
+        /// <summary>
+        /// Determine the number of idle slots to be inserted
+        /// TODO: Not represent idle slots with null
+        /// </summary>
+        private int GenerateIdleNodes(List<TaskNode> readyList)
+        {
+            int numberOfIdleNodes = 0;
+            if (numberOfAvailableCores == maxCores) {
+                numberOfIdleNodes = numberOfAvailableCores - 1;
+            } else
+                numberOfIdleNodes = numberOfAvailableCores;
+
+            for (int i = 0; i < numberOfIdleNodes; i++) {
+                readyList.Add(null);
+            }
+
+            return numberOfIdleNodes;
         }
 
 
@@ -188,7 +252,9 @@ namespace GraphTest.Schedulers
         public static Branch GenerateDummyStartNode(List<TaskNode> readyList, int cores)
         {
             maxCores = cores;
-            return new Branch(readyList, 0, 0, cores,null, null);
+            var dummyNode = new Branch(readyList, 0, 0, cores, null, null);
+            dummyNode.readyList = readyList;
+            return dummyNode;
         }       
     }
 
