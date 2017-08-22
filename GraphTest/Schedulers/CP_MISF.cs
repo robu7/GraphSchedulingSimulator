@@ -19,11 +19,12 @@ namespace GraphTest.Schedulers
             this.TaskList = new List<TaskNode>();
         }
 
-        public BranchWorker(int workerId, int finishTime, List<TaskNode> taskList)
+        public BranchWorker(int workerId, int finishTime, List<TaskNode> taskList, TaskNode currentTask)
         {
             this.WorkerId = workerId;
             this.FinishTime = finishTime;
             this.TaskList = taskList;
+            this.currentTask = currentTask;
         }
 
         public void AssignTask(TaskNode task, int currentTime)
@@ -40,7 +41,7 @@ namespace GraphTest.Schedulers
 
         public BranchWorker Clone()
         {
-            return new BranchWorker(WorkerId, FinishTime, TaskList.ToList());
+            return new BranchWorker(WorkerId, FinishTime, TaskList.ToList(), currentTask);
         }
     }
 
@@ -50,6 +51,7 @@ namespace GraphTest.Schedulers
     /// </summary>
     class Branch
     {
+        // Local members
         List<TaskNode> readyList;
         int[] selectionPointer;
         int earliestTaskFinishTime;
@@ -57,15 +59,20 @@ namespace GraphTest.Schedulers
         int numberOfAvailableCores;
         int[] availableCores;
         private static int maxCores;
-        Dictionary<int, TaskNode> coreToTask;
         Dictionary<int, BranchWorker> workerMapping;
+        List<TaskNode> localNonScheduledNodes;
         int totalTime;
-        static int bestSolution;
+
+        // Global
+        static List<TaskNode> allNodes;
+        public static int bestSolution;
+        public static Dictionary<int, BranchWorker> bestSolutionWorker;
+        public static int branchesExamined; 
 
         /// <summary>
         /// 
         /// </summary>
-        public Branch(List<TaskNode> readyList, int time, int depth, int cores, int[] availCores, Dictionary<int, TaskNode> coreToTaskMapping, Dictionary<int, BranchWorker> workerMapping, int[] selection = null)
+        public Branch(List<TaskNode> readyList, int time, int depth, int cores, int[] availCores, Dictionary<int, BranchWorker> workerMapping, int[] selection = null)
         {
             this.readyList = readyList;
             this.depth = depth;
@@ -73,10 +80,9 @@ namespace GraphTest.Schedulers
             this.earliestTaskFinishTime = 0;
             this.numberOfAvailableCores = cores;
             this.selectionPointer = selection;
-            this.coreToTask = coreToTaskMapping;
             this.workerMapping = workerMapping;
             this.availableCores = availCores;
-            if(coreToTask == null) {
+            if(workerMapping == null) {
                 Init();               
             }
         }
@@ -86,12 +92,11 @@ namespace GraphTest.Schedulers
         /// </summary>
         private void Init()
         {
-            coreToTask = new Dictionary<int, TaskNode>();
             availableCores = new int[numberOfAvailableCores];
             workerMapping = new Dictionary<int, BranchWorker>();
+            localNonScheduledNodes = new List<TaskNode>();
             for (int i = 0; i < numberOfAvailableCores; i++) {
                 availableCores[0] = i;
-                coreToTask[i] = null;
                 workerMapping[i] = new BranchWorker(i);
             }
         }
@@ -102,45 +107,62 @@ namespace GraphTest.Schedulers
         /// </summary>
         public int ExpandBranch()
         {
+            localNonScheduledNodes = allNodes.Where(x => x.Status != BuildStatus.Scheduled).ToList();
 
             // Allocate tasks to proccesors using selection pointer
             // and set allocated nodes to scheduled 
             // and insert nodes which are now ready to be scheduled
-
+            var debugReadylist = readyList.ToList();
             List<TaskNode> itemsToBeRemoved = new List<TaskNode>();
             for (int i = 0; i < availableCores.Length; i++) {
                 int coreID = availableCores[i];
                 workerMapping[coreID].AssignTask(readyList[selectionPointer[i]], totalTime);
-                coreToTask[coreID] = readyList[selectionPointer[i]];
+                localNonScheduledNodes.Remove(readyList[selectionPointer[i]]);
                 AddNewReadyNodes(readyList, selectionPointer[i]);
                 itemsToBeRemoved.Add(readyList[selectionPointer[i]]);
-                //readyList.RemoveAt(selectionPointer[i]);
             }
             foreach (var item in itemsToBeRemoved) {
                 readyList.Remove(readyList.First(x => x == item));
+
             }
 
 
             this.earliestTaskFinishTime = FindEarliestTaskFinishTime();
 
-            Console.Write("d=" + depth + "   t=" + earliestTaskFinishTime + "\r\nR=[");
-            readyList.ForEach(x => Console.Write(x != null ? x.ID : 0));
-            Console.WriteLine("]\r\ncores="+numberOfAvailableCores);
+            int coreCount = 0;
+            foreach (var item in workerMapping) {
+                if (item.Value.currentTask == null || item.Value.FinishTime <= earliestTaskFinishTime) {
+                    ++coreCount;
+                }
+            }
 
+
+            Console.WriteLine("-------------------");
+            Console.Write("d=" + depth + "   t=" + earliestTaskFinishTime + "\r\nR=[");
+            debugReadylist.ForEach(x => Console.Write((x != null ? x.ID : 0) + ","));
+            Console.Write("]\r\nnewR=[");
+            readyList.ForEach(x => Console.Write((x != null ? x.ID : 0)+"," ));
+            Console.WriteLine("]\r\ncores="+ coreCount);
+            Console.Write("SP:[");
+            for (int i = 0; i < selectionPointer.Length; i++) {
+                Console.Write(availableCores[i] +"->"+ selectionPointer[i] + " ,");
+            }
+            Console.WriteLine("]");
+            foreach (var item in workerMapping) {
+                Console.WriteLine(item.Key +":"+ (item.Value.currentTask != null ? item.Value.currentTask.ID : 0) + " fin:" +workerMapping[item.Key].FinishTime);
+            }
+            Console.WriteLine("-------------------");
 
             // Find the time where the earliest task is finished and
             // compare with lower bound and best solution
             // if higher then terminate branch
+            var highestFinishTime = workerMapping.Values.Max(x => x.FinishTime);
 
-            //var longestTime = workerMapping.Values.Max(x => x.FinishTime);
+            if (readyList.Where(x => x != null).Count() == 0 && coreCount == maxCores)
+                return highestFinishTime;
 
-            //if (!readyList.Exists(x => x != null)) {
-            //    return longestTime;
-            //}
-            //else if (longestTime > bestSolution && bestSolution != 0)
-            //    return 0;
-
-
+            if (highestFinishTime > bestSolution && bestSolution != 0)
+                return 0;
 
             GenerateBranchAlternatives();
 
@@ -153,25 +175,23 @@ namespace GraphTest.Schedulers
         /// </summary>
         public void GenerateBranchAlternatives()
         {
+            // Reset all tasks that where not scheduled at this time,
+            // To prevent faulty nodes being inserted to the readyList 
+
+           
+
             readyList.RemoveAll(x => x == null);
 
             // Determine how many cores will be available at earliestTaskFinishTime
             int coreCount = 0;
             List<int> availableCores = new List<int>();
-            //foreach (var item in coreToTask) {
-            //    if (item.Value == null || item.Value.SimulatedExecutionTime <= earliestTaskFinishTime) {
-            //        ++coreCount;
-            //        availableCores.Add(item.Key);
-            //    }
-            //}
             foreach (var item in workerMapping) {
                 if (item.Value.currentTask == null || item.Value.FinishTime <= earliestTaskFinishTime) {
+                    item.Value.FinishTime = earliestTaskFinishTime;
                     ++coreCount;
                     availableCores.Add(item.Key);
                 }
             }
-
-
 
             this.numberOfAvailableCores = coreCount;
             this.availableCores = availableCores.ToArray();
@@ -184,52 +204,22 @@ namespace GraphTest.Schedulers
             // List which will contain branch alternatives 
             List<int[]> backTrackingList = GenerateSelectionPointerAlternatives();
  
-            //Console.WriteLine(readyList.Count);
-
-            //var readyListCopy = readyList.ToList();
-
-            // Find the time where the earliest task is finished
-            // Change to include tasks in progress
-
-            // ----------------------------- Fix to include tasks in progress
-            //int earliestTaskFinishTime = FindEarliestTaskFinishTime(backTrackingList, 0);
-
-            //int[] taskIndexes = backTrackingList[0];
-
-            ////for (int i = 0; i < numberOfAvailableCores; i++) {
-            ////    coreToTask[i] = readyListCopy[taskIndexes[i]];
-            ////}
-
-            //foreach (var index in taskIndexes) {
-            //    AddNewReadyNodes(readyListCopy, index);
-            //    readyListCopy.RemoveAt(0);
-            //}
-
-            //--------------------------------
-
-            //int backtrackingIndex = 0;
-            //List<TaskNode> readyListCopy;
             while (backTrackingList.Count > 0) {
                 var readyListCopy = new List<TaskNode>(readyList);
                 //var workerMappingCopy = new Dictionary<int, BranchWorker>(workerMapping);
+                foreach (var item in localNonScheduledNodes) {
+                    item.Status = BuildStatus.None;
+                }
+                ++branchesExamined;
                 var workerMappingCopy = workerMapping.ToDictionary(x => x.Key, x => x.Value.Clone());
-                var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1, coreCount, availableCores.ToArray(), coreToTask, workerMappingCopy, backTrackingList[0]);
+                var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1, coreCount, availableCores.ToArray(), workerMappingCopy, backTrackingList[0]);
                 var solutionTime = newBranch.ExpandBranch();
-                //if (solutionTime != 0) {
-                //    if (solutionTime < bestSolution || bestSolution == 0)
-                //        bestSolution = solutionTime;
-                //}
+                if (solutionTime != 0) {
+                    if (solutionTime < bestSolution || bestSolution == 0)
+                        bestSolution = solutionTime;
+                }
                 backTrackingList.RemoveAt(0);
             }
-
-            //readyListCopy.RemoveAll(x => x == null);
-
-
-
-            //newBranch.GenerateBranchAlternatives();
-
-            //}
-
 
         }
 
@@ -289,14 +279,6 @@ namespace GraphTest.Schedulers
         private int FindEarliestTaskFinishTime()
         {
             int earliestWorkerFinishTime = 0;
-            //foreach (var task in coreToTask.Values) {
-            //    if (task == null)
-            //        continue;
-
-            //    if (task.SimulatedExecutionTime < earliestTaskFinishTime || earliestTaskFinishTime == 0) {
-            //        earliestTaskFinishTime = task.SimulatedExecutionTime;
-            //    }
-            //}
 
             foreach (var worker in workerMapping.Values) {
                 if (worker.currentTask  == null)
@@ -326,8 +308,13 @@ namespace GraphTest.Schedulers
         /// <summary>
         /// 
         /// </summary>
-        public static Branch GenerateDummyStartNode(List<TaskNode> readyList, int cores)
+        public static Branch GenerateDummyStartNode(List<TaskNode> readyList, int cores, List<TaskNode> completeNodeSet)
         {
+            foreach (var node in completeNodeSet) {
+                node.Status = BuildStatus.None;
+            }
+
+            allNodes = completeNodeSet;
             maxCores = cores;
             var dummyNode = new Branch(readyList,0, 0, cores, null, null, null);
             dummyNode.readyList = readyList;
@@ -378,9 +365,11 @@ namespace GraphTest.Schedulers
 
         private void StartDepthFirstSearch(List<TaskNode> readyList)
         {
-            var startBranch = Branch.GenerateDummyStartNode(readyList, WorkerCount);
+            var startBranch = Branch.GenerateDummyStartNode(readyList, WorkerCount, graph.Nodes);
 
             startBranch.GenerateBranchAlternatives();
+            Console.WriteLine("Best solution is :" + Branch.bestSolution);
+            Console.WriteLine("Branches examined :" + Branch.branchesExamined);//249883
         }
 
         private void DetermineLevels()

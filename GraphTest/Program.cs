@@ -155,7 +155,8 @@ namespace GraphTest
                     break;
                 case "2":
                 case "CP/MISF":
-                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.threadCount);
+                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, 3);
+                    //CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.threadCount);
                     tmp.ScheduleDAG(DAGgraph);
                     break;
                     
@@ -187,6 +188,8 @@ namespace GraphTest
             for (int i = 0; i < Settings.threadCount; i++) {
                 ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
             }
+
+            Console.WriteLine("MakeSpan: " +workerList.Max(x => x.EarliestStartTime));
 
             new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
 

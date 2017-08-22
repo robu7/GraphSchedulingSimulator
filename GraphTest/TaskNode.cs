@@ -8,6 +8,15 @@ using System.Xml.Serialization;
 
 namespace GraphTest
 {
+    public static class ListCloner
+    {
+        public static List<T> Clone<T>(this List<T> listToClone) where T : ICloneable
+        {
+            return listToClone.Select(item => (T)item.Clone()).ToList();
+        }
+    }
+
+
     public enum BuildStatus { None, Scheduled, Executed}
 
     /// <summary>
@@ -15,7 +24,7 @@ namespace GraphTest
     /// The graph is a directed acyclic graph (DAG) where each node is a build task 
     /// and edges represents precedence contraints between tasks. 
     /// </summary>
-    public class TaskNode
+    public class TaskNode : ICloneable
     {
         public int ID { get; }
         public bool IsEntryNode { get; set; }
@@ -53,6 +62,21 @@ namespace GraphTest
             tLevel = null;
             slLevel = null;
             IsEntryNode = true;
+        }
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        public TaskNode(TaskNode prevTask)
+        {
+            ID = prevTask.ID;
+            SimulatedExecutionTime = prevTask.SimulatedExecutionTime;
+            parentNodes = prevTask.ParentNodes.Clone();
+            childNodes = prevTask.ChildNodes.Clone();
+            tLevel = prevTask.tLevel;
+            slLevel = prevTask.slLevel;
+            Status = BuildStatus.None;
+            ReadySignal = new ManualResetEvent(false);
         }
 
         public TaskNode(int id,int executionTime)
@@ -222,5 +246,9 @@ namespace GraphTest
             return ID.ToString();
         }
 
+        public object Clone()
+        {
+            return new TaskNode(this);
+        }
     }
 }
