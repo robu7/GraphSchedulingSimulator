@@ -36,7 +36,6 @@ namespace GraphTest
                 waitsignals[i] = new ManualResetEvent(false);
                 earliestStartTime[i] = 0;
                 workerList.Add(new Worker(ref waitsignals[i], i));
-
             }
         }
 
@@ -64,13 +63,6 @@ namespace GraphTest
             }
 
             TaskExecutionEstimator test = new TaskExecutionEstimator();
-
-            //double speedup = sequentialTime / parallelTime;
-
-            //Console.WriteLine("Sequential took: "+ sequentialTime);
-            //Console.WriteLine("Parallel took: " + parallelTime);
-            //Console.WriteLine("Speedup is: " + speedup);
-            //Console.WriteLine("Efficiency per processor: " + speedup/ Settings.threadCount);
 
             using (w = File.AppendText("log.txt"))
             {
@@ -138,6 +130,9 @@ namespace GraphTest
         static void ExecuteAlgorithm(string arg = "")
         {
             Stopwatch time = new Stopwatch();
+            DAGgraph.ComputeSLevel();
+            DAGgraph.ComputeTLevel();
+
 
             if (arg == "") {
                 Console.WriteLine("Choose algorithm by name of number: HLFET::1, CP/MISF::2, ...");
@@ -155,7 +150,7 @@ namespace GraphTest
                     break;
                 case "2":
                 case "CP/MISF":
-                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, 3);
+                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, 4);
                     //CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.threadCount);
                     tmp.ScheduleDAG(DAGgraph);
                     break;
@@ -169,12 +164,25 @@ namespace GraphTest
             }
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private static void ExecuteSchedule(Scheduler schedule)
+        {
+            Stopwatch time = new Stopwatch();
+            time.Start();
+            
+            var parallelTime = time.ElapsedMilliseconds;
+            time.Stop();
+            time.Reset();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         private static void ExecuteHLWET()
         {
-
-            DAGgraph.ComputeSLevel();
-            DAGgraph.ComputeTLevel();
-            var sortedList = DAGgraph.SortBySLevel();
 
             Stopwatch time = new Stopwatch();
             time.Start();
@@ -189,7 +197,7 @@ namespace GraphTest
                 ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
             }
 
-            Console.WriteLine("MakeSpan: " +workerList.Max(x => x.EarliestStartTime));
+            Console.WriteLine("MakeSpan: " + workerList.Max(x => x.EarliestStartTime));
 
             new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
 
@@ -200,7 +208,6 @@ namespace GraphTest
             time.Reset();
 
             Console.WriteLine("HLWET took {0}ms",parallelTime);
-
         }
 
 
@@ -264,6 +271,5 @@ namespace GraphTest
         {
             w.Write(logMessage);
         }
-
     }
 }

@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace GraphTest.Schedulers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     class BranchWorker
     {
         public List<TaskNode> TaskList;
@@ -103,15 +106,16 @@ namespace GraphTest.Schedulers
 
 
         /// <summary>
-        /// 
+        /// Expand this branch and allocate tasks to workers acording to the selection pointer,
+        /// Apply elimination rule and expand further if deemed to be a viable solution(so far).
         /// </summary>
         public int ExpandBranch()
         {
             localNonScheduledNodes = allNodes.Where(x => x.Status != BuildStatus.Scheduled).ToList();
 
-            // Allocate tasks to proccesors using selection pointer
-            // and set allocated nodes to scheduled 
-            // and insert nodes which are now ready to be scheduled
+            // Allocate tasks to proccesors using selection pointer,
+            // set allocated nodes to scheduled,
+            // insert nodes which are now ready to be scheduled into the readyList.
             var debugReadylist = readyList.ToList();
             List<TaskNode> itemsToBeRemoved = new List<TaskNode>();
             for (int i = 0; i < availableCores.Length; i++) {
@@ -126,7 +130,6 @@ namespace GraphTest.Schedulers
 
             }
 
-
             this.earliestTaskFinishTime = FindEarliestTaskFinishTime();
 
             int coreCount = 0;
@@ -135,7 +138,6 @@ namespace GraphTest.Schedulers
                     ++coreCount;
                 }
             }
-
 
             Console.WriteLine("-------------------");
             Console.Write("d=" + depth + "   t=" + earliestTaskFinishTime + "\r\nR=[");
@@ -175,11 +177,6 @@ namespace GraphTest.Schedulers
         /// </summary>
         public void GenerateBranchAlternatives()
         {
-            // Reset all tasks that where not scheduled at this time,
-            // To prevent faulty nodes being inserted to the readyList 
-
-           
-
             readyList.RemoveAll(x => x == null);
 
             // Determine how many cores will be available at earliestTaskFinishTime
@@ -200,19 +197,24 @@ namespace GraphTest.Schedulers
             // First determine how many idle nodes that should be available
             int numberOfIdleNodes = GenerateIdleNodes(readyList);
 
-
             // List which will contain branch alternatives 
             List<int[]> backTrackingList = GenerateSelectionPointerAlternatives();
  
             while (backTrackingList.Count > 0) {
                 var readyListCopy = new List<TaskNode>(readyList);
-                //var workerMappingCopy = new Dictionary<int, BranchWorker>(workerMapping);
+
+                // Reset all tasks that where not scheduled at this time,
+                // To prevent faulty nodes being inserted to the readyList
                 foreach (var item in localNonScheduledNodes) {
                     item.Status = BuildStatus.None;
                 }
-                ++branchesExamined;
-                var workerMappingCopy = workerMapping.ToDictionary(x => x.Key, x => x.Value.Clone());
+
+                ++branchesExamined; // just for debug
+                var workerMappingCopy = workerMapping.ToDictionary(x => x.Key, x => x.Value.Clone()); // create copy of the workerMapping
                 var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1, coreCount, availableCores.ToArray(), workerMappingCopy, backTrackingList[0]);
+
+                // Recieve makespan value from a branch that are at the end or has been cut
+                // return value will be 0 if branch is cut
                 var solutionTime = newBranch.ExpandBranch();
                 if (solutionTime != 0) {
                     if (solutionTime < bestSolution || bestSolution == 0)
@@ -222,6 +224,7 @@ namespace GraphTest.Schedulers
             }
 
         }
+
 
         /// <summary>
         /// 
@@ -304,6 +307,7 @@ namespace GraphTest.Schedulers
             task.Status = BuildStatus.Scheduled;
             readyList.AddRange(task.ChildNodes.Where(x => x.IsReadyToSchedule));
         }
+
 
         /// <summary>
         /// 
