@@ -15,6 +15,6 @@ namespace GraphTest
         public const int minSimTime = 200;
         public const int maxSimTime = 1000;
         public const double changeOfEdge = 70;
-        public const int threadCount = 4;
+        public const int ThreadCount = 2;
     }
 }

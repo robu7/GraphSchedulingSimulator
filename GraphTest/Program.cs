@@ -25,13 +25,13 @@ namespace GraphTest
 
         static void Reset()
         {
-            earliestStartTime = new int[Settings.threadCount];
-            waitsignals = new ManualResetEvent[Settings.threadCount];
-
+            earliestStartTime = new int[Settings.ThreadCount];
+            waitsignals = new ManualResetEvent[Settings.ThreadCount];
+            DAGgraph.ResetTasks();
             // Init all threadlists, one per thread
             threadLists = new List<List<TaskNode>>();
             workerList = new List<Worker>();
-            for (int i = 0; i < Settings.threadCount; i++) {
+            for (int i = 0; i < Settings.ThreadCount; i++) {
                 threadLists.Add(new List<TaskNode>());
                 waitsignals[i] = new ManualResetEvent(false);
                 earliestStartTime[i] = 0;
@@ -43,10 +43,10 @@ namespace GraphTest
         static void Main(string[] args)
         {
             //w = new StreamWriter()
-            using (w = File.AppendText("log.txt"))
-            {
-                InitLog(w);
-            }
+            //using (w = File.AppendText("log.txt"))
+            //{
+            //    InitLog(w);
+            //}
 
             // Produce a randomgraph for testing
             //DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
@@ -55,20 +55,20 @@ namespace GraphTest
             // Init per thread variables 
             Reset();
 
-            ThreadPool.SetMaxThreads(Settings.threadCount, Settings.threadCount);
+            ThreadPool.SetMaxThreads(Settings.ThreadCount, Settings.ThreadCount);
 
-            foreach (var item in DAGgraph.SortByID())
-            {
-                item.LogNodeInfo();
-            }
+            //foreach (var item in DAGgraph.SortByID())
+            //{
+            //    item.LogNodeInfo();
+            //}
 
             TaskExecutionEstimator test = new TaskExecutionEstimator();
 
-            using (w = File.AppendText("log.txt"))
-            {
-                Log("\r\nEnd of test run\r\n:\r\n", w);
-                Log("-------------------------------", w);
-            }
+            //using (w = File.AppendText("log.txt"))
+            //{
+            //    Log("\r\nEnd of test run\r\n:\r\n", w);
+            //    Log("-------------------------------", w);
+            //}
 
             Console.Write(":");
             string consoleCmd = Console.ReadLine();
@@ -82,6 +82,10 @@ namespace GraphTest
             }
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
         static void HandleInput(string input)
         {
             string[] cmdArgs = input.Split();
@@ -91,6 +95,8 @@ namespace GraphTest
             {
                 case "rand":
                     Console.WriteLine("Randomizing a new graph....");
+                    break;
+                case "cores":
                     break;
                 case "load":
                     break;
@@ -127,6 +133,10 @@ namespace GraphTest
             }
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
         static void ExecuteAlgorithm(string arg = "")
         {
             Stopwatch time = new Stopwatch();
@@ -145,16 +155,32 @@ namespace GraphTest
                 case "HLWET":
                     Console.WriteLine("Executing HLWET ....");
                     ExecuteHLWET();
+                    Reset();
                     break;
                 case "ILP":
                     break;
                 case "2":
                 case "CP/MISF":
-                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, 4);
+                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.ThreadCount);
                     //CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.threadCount);
                     tmp.ScheduleDAG(DAGgraph);
+
+                    Stopwatch time2 = new Stopwatch();
+                    time2.Start();
+                    var infoDisplayer = 0;
+                    for (int i = 0; i < Settings.ThreadCount; i++) {
+                        ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
+                    }
+                    WaitHandle.WaitAll(waitsignals);
+                    var parallelTime = time2.ElapsedMilliseconds;
+                    time2.Stop();
+                    time2.Reset();
+                    Console.WriteLine("DF/IHS took {0}ms", parallelTime);
                     break;
-                    
+                case "3":
+                case "Seq":
+                    ExecuteSequencial(DAGgraph.SortBySLevel());
+                    break;                    
                 case "":
                     Console.WriteLine("Wrong number of arguments");
                     break;
@@ -187,21 +213,31 @@ namespace GraphTest
             Stopwatch time = new Stopwatch();
             time.Start();
 
-            HighestLevel scheduler = new HighestLevel(DAGgraph, workerList, Settings.threadCount);
+            HighestLevel scheduler = new HighestLevel(DAGgraph, workerList, Settings.ThreadCount);
 
             scheduler.ScheduleDAG(DAGgraph);
 
             //var infoDisplayer = new SchedulerInfo(workerList);
             var infoDisplayer = 0;
-            for (int i = 0; i < Settings.threadCount; i++) {
+            for (int i = 0; i < Settings.ThreadCount; i++) {
                 ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
             }
 
             Console.WriteLine("MakeSpan: " + workerList.Max(x => x.EarliestStartTime));
 
-            new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
+
+
+            //new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
 
             WaitHandle.WaitAll(waitsignals);
+
+            foreach (var item in workerList) {
+                Console.Write("worker" + item.WorkerID + ":");
+                foreach (var tasks in item.TaskList) {
+                    Console.Write(" " + tasks.ID + ",");
+                }
+                Console.WriteLine();
+            }
 
             var parallelTime = time.ElapsedMilliseconds;
             time.Stop();
@@ -214,12 +250,11 @@ namespace GraphTest
         /// <summary>
         /// Run in sequential execution
         /// </summary>
-        private static void ExecuteSequencial(List<TaskNode> sortedList)
+        private static void ExecuteSequencial(IEnumerable<TaskNode> sortedList)
         {
            double sequentialTime = 0;
            Stopwatch time = new Stopwatch();
            time.Start();
-
            ExecuteTreeSeq(sortedList as object);
 
            sequentialTime = time.ElapsedMilliseconds;
@@ -228,32 +263,16 @@ namespace GraphTest
 
         private static void ExecuteTreeSeq(object v)
         {
-            Console.WriteLine("Hello from thread: " + Thread.CurrentThread.ManagedThreadId);
-            //object[] state = o as object[];
-            List<TaskNode> localList = v as List<TaskNode>;
+            Console.WriteLine("Sequential execution");
+
+            IEnumerable<TaskNode> localList = v as IEnumerable<TaskNode>;
             foreach (var item in localList)
             {
-                while (!item.IsReadyToExecute) { }
+                item.WaitForParentsToFinish();
                 item.Execute();
                 item.Status = BuildStatus.Executed;
             }
             Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " is done");
-        }
-
-        private static void ExecuteTree(object o)
-        {
-            Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " started work");
-            object[] state = o as object[];
-            List<TaskNode> localList = state[0] as List<TaskNode>;
-            ManualResetEvent doneSignal = state[1] as ManualResetEvent;
-            foreach (var item in localList)
-            {
-                while (!item.IsReadyToExecute) { }
-                item.Execute();
-                item.Status = BuildStatus.Executed;
-            }
-            doneSignal.Set();
-            Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " just finished");
         }
 
 

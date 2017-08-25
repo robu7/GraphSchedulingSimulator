@@ -39,7 +39,17 @@ namespace GraphTest
         public BuildStatus Status { get; set; } = BuildStatus.None;
         public ManualResetEvent ReadySignal { get; private set; }
 
-        public int? tLevel { get; private set; }
+        public int EarliestStartTime { get; private set; }
+        public void ResetEST()
+        {
+            EarliestStartTime = (int)tLevel;
+        }
+        public void UpdateEST(int newEst)
+        {
+            EarliestStartTime = newEst;
+        }
+
+        public int? tLevel { get; set; }
         public int? slLevel { get; private set; }
 
         // old, switch to WaitForParentsToFinish

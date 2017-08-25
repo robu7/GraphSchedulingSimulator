@@ -71,7 +71,7 @@ namespace GraphTest
 
         private static void Update(Object myObject, EventArgs myEventArgs)
         {
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < Settings.ThreadCount; i++) {
                 if (finishedStatus[i])
                     continue;
                 var activeControl = activeControls[i];

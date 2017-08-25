@@ -35,10 +35,15 @@ namespace GraphTest.Schedulers
             currentTask = task;
             if (task != null) {
                 TaskList.Add(task);
-                if(currentTime + task.SimulatedExecutionTime < task.tLevel + task.SimulatedExecutionTime)
-                    FinishTime = (int)task.tLevel + task.SimulatedExecutionTime;
-                else
+                if (currentTime + task.SimulatedExecutionTime < task.EarliestStartTime + task.SimulatedExecutionTime)
+                    FinishTime = task.EarliestStartTime + task.SimulatedExecutionTime;
+                else {
                     FinishTime = currentTime + task.SimulatedExecutionTime;
+                    foreach (var item in task.ChildNodes) {
+                        if(item.EarliestStartTime < currentTime + task.SimulatedExecutionTime)
+                            item.UpdateEST(FinishTime);
+                    }
+                }
             }
         }
 
@@ -120,7 +125,8 @@ namespace GraphTest.Schedulers
             List<TaskNode> itemsToBeRemoved = new List<TaskNode>();
             for (int i = 0; i < availableCores.Length; i++) {
                 int coreID = availableCores[i];
-                workerMapping[coreID].AssignTask(readyList[selectionPointer[i]], totalTime);
+                var task = readyList[selectionPointer[i]];
+                workerMapping[coreID].AssignTask(task, totalTime);
                 localNonScheduledNodes.Remove(readyList[selectionPointer[i]]);
                 AddNewReadyNodes(readyList, selectionPointer[i]);
                 itemsToBeRemoved.Add(readyList[selectionPointer[i]]);
@@ -139,29 +145,35 @@ namespace GraphTest.Schedulers
                 }
             }
 
-            Console.WriteLine("-------------------");
-            Console.Write("d=" + depth + "   t=" + earliestTaskFinishTime + "\r\nR=[");
-            debugReadylist.ForEach(x => Console.Write((x != null ? x.ID : 0) + ","));
-            Console.Write("]\r\nnewR=[");
-            readyList.ForEach(x => Console.Write((x != null ? x.ID : 0)+"," ));
-            Console.WriteLine("]\r\ncores="+ coreCount);
-            Console.Write("SP:[");
-            for (int i = 0; i < selectionPointer.Length; i++) {
-                Console.Write(availableCores[i] +"->"+ selectionPointer[i] + " ,");
-            }
-            Console.WriteLine("]");
-            foreach (var item in workerMapping) {
-                Console.WriteLine(item.Key +":"+ (item.Value.currentTask != null ? item.Value.currentTask.ID : 0) + " fin:" +workerMapping[item.Key].FinishTime);
-            }
-            Console.WriteLine("-------------------");
+            //Console.WriteLine("-------------------");
+            //Console.Write("d=" + depth + "   t=" + earliestTaskFinishTime + "\r\nR=[");
+            //debugReadylist.ForEach(x => Console.Write((x != null ? x.ID : 0) + ","));
+            //Console.Write("]\r\nnewR=[");
+            //readyList.ForEach(x => Console.Write((x != null ? x.ID : 0) + ","));
+            //Console.WriteLine("]\r\ncores=" + coreCount);
+            //Console.Write("SP:[");
+            //for (int i = 0; i < selectionPointer.Length; i++) {
+            //    Console.Write(availableCores[i] + "->" + selectionPointer[i] + " ,");
+            //}
+            //Console.WriteLine("]");
+            //foreach (var item in workerMapping) {
+            //    Console.WriteLine(item.Key + ":" + (item.Value.currentTask != null ? item.Value.currentTask.ID : 0) + " fin:" + workerMapping[item.Key].FinishTime);
+            //}
+            //Console.WriteLine("-------------------");
 
             // Find the time where the earliest task is finished and
             // compare with lower bound and best solution
             // if higher then terminate branch
             var highestFinishTime = workerMapping.Values.Max(x => x.FinishTime);
 
-            if (readyList.Where(x => x != null).Count() == 0 && coreCount == maxCores)
+            if (readyList.Where(x => x != null).Count() == 0 && coreCount == maxCores) {
+
+                if (highestFinishTime < bestSolution || bestSolution == 0)
+                    bestSolutionWorker = workerMapping;
+
                 return highestFinishTime;
+            }
+                //return new Tuple<int, Dictionary<int, BranchWorker>>(highestFinishTime,workerMapping);
 
             if (highestFinishTime > bestSolution && bestSolution != 0)
                 return 0;
@@ -207,6 +219,7 @@ namespace GraphTest.Schedulers
                 // To prevent faulty nodes being inserted to the readyList
                 foreach (var item in localNonScheduledNodes) {
                     item.Status = BuildStatus.None;
+                    item.ResetEST();
                 }
 
                 ++branchesExamined; // just for debug
@@ -374,6 +387,20 @@ namespace GraphTest.Schedulers
             startBranch.GenerateBranchAlternatives();
             Console.WriteLine("Best solution is :" + Branch.bestSolution);
             Console.WriteLine("Branches examined :" + Branch.branchesExamined);//249883
+
+            foreach (var item in Branch.bestSolutionWorker) {
+                Console.Write("worker"+item.Key+":");
+                foreach (var tasks in item.Value.TaskList) {
+                    Console.Write(" " + tasks.ID + ",");
+                }
+                Console.WriteLine();
+            }
+
+            for (int i = 0; i < Settings.ThreadCount; i++) {
+                foreach (var item in Branch.bestSolutionWorker[i].TaskList) {
+                    workerList[i].AddTask(0, 0, item);
+                }
+            }
         }
 
         private void DetermineLevels()
