@@ -49,8 +49,8 @@ namespace GraphTest
             //}
 
             // Produce a randomgraph for testing
-            //DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
-            DAGgraph = TaskGraph.GenerateTestGraph();
+            DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
+            //DAGgraph = TaskGraph.GenerateTestGraph();
 
             // Init per thread variables 
             Reset();
@@ -95,6 +95,7 @@ namespace GraphTest
             {
                 case "rand":
                     Console.WriteLine("Randomizing a new graph....");
+                    DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
                     break;
                 case "cores":
                     break;
