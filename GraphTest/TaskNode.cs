@@ -10,9 +10,9 @@ namespace GraphTest
 {
     public static class ListCloner
     {
-        public static List<T> Clone<T>(this List<T> listToClone) where T : ICloneable
+        public static List<TaskNode> Clone(this List<TaskNode> listToClone , Dictionary<int, TaskNode> visited)
         {
-            return listToClone.Select(item => (T)item.Clone()).ToList();
+            return listToClone!=null? listToClone.Select(item => item?.Clone(visited)).ToList(): new List<TaskNode>();
         }
     }
 
@@ -24,7 +24,7 @@ namespace GraphTest
     /// The graph is a directed acyclic graph (DAG) where each node is a build task 
     /// and edges represents precedence contraints between tasks. 
     /// </summary>
-    public class TaskNode : ICloneable
+    public class TaskNode
     {
         public int ID { get; }
         public bool IsEntryNode { get; set; }
@@ -39,15 +39,51 @@ namespace GraphTest
         public BuildStatus Status { get; set; } = BuildStatus.None;
         public ManualResetEvent ReadySignal { get; private set; }
 
-        public int EarliestStartTime { get; private set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        private int finishTime;
+        public int FinishTime {
+            get {
+                return finishTime;
+            }
+            set { finishTime = value;  }
+        }
+        public void UpdateFinishTime()
+        {
+            FinishTime = parentNodes.Count > 0 ? parentNodes.Max(x => x.EarliestStartTime)+SimulatedExecutionTime : 0;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private int earliestStartTime;
+        public int EarliestStartTime {
+            get {
+                UpdateEST();
+                return earliestStartTime;
+            } private set { earliestStartTime = value;  } }
+
         public void ResetEST()
         {
-            EarliestStartTime = (int)tLevel;
+            FinishTime = 0;
+            UpdateEST();
+            //EarliestStartTime = (int)tLevel;
         }
-        public void UpdateEST(int newEst)
+        public void UpdateEST()
         {
-            EarliestStartTime = newEst;
+            EarliestStartTime = parentNodes.Count > 0 ? parentNodes.Max(x => x.FinishTime) : 0;
+            FinishTime = earliestStartTime + SimulatedExecutionTime;
         }
+
+        public int Level {
+            get {
+                if (childNodes.Count == 0)
+                    return SimulatedExecutionTime;
+                else
+                    return childNodes.Max(x => x.Level)+ SimulatedExecutionTime;
+            } }
+
 
         public int? tLevel { get; set; }
         public int? slLevel { get; private set; }
@@ -77,12 +113,13 @@ namespace GraphTest
         /// <summary>
         /// Copy constructor
         /// </summary>
-        public TaskNode(TaskNode prevTask)
+        private TaskNode(TaskNode prevTask, Dictionary<int, TaskNode> visited)
         {
             ID = prevTask.ID;
+            visited.Add(ID, this);
             SimulatedExecutionTime = prevTask.SimulatedExecutionTime;
-            parentNodes = prevTask.ParentNodes.Clone();
-            childNodes = prevTask.ChildNodes.Clone();
+            parentNodes = prevTask.ParentNodes.Clone(visited);
+            childNodes = prevTask.ChildNodes.Clone(visited);
             tLevel = prevTask.tLevel;
             slLevel = prevTask.slLevel;
             Status = BuildStatus.None;
@@ -256,9 +293,16 @@ namespace GraphTest
             return ID.ToString();
         }
 
-        public object Clone()
+        public TaskNode Clone(Dictionary<int, TaskNode> visited)
         {
-            return new TaskNode(this);
+            if(visited.ContainsKey(this.ID)) {
+                return visited[this.ID];
+            }
+            else {
+                var taskCopy = new TaskNode(this, visited);
+                //visited.Add(taskCopy.ID, taskCopy);
+                return taskCopy;
+            }
         }
     }
 }

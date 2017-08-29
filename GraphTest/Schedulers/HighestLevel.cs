@@ -56,15 +56,21 @@ namespace GraphTest.Schedulers
 
                 var worker = GetWorkerWithMinEst();
 
-                if (worker.EarliestStartTime < task.tLevel) {
-                    worker.AddIdleTime(worker.EarliestStartTime, (int)task.tLevel, task);
-                    worker.EarliestStartTime = (int)task.tLevel;
-                } 
-                    
+                //if (worker.EarliestStartTime < task.tLevel) {
+                //    worker.AddIdleTime(worker.EarliestStartTime, (int)task.tLevel, task);
+                //    worker.EarliestStartTime = (int)task.tLevel;
+                //} 
+
+                if (worker.EarliestStartTime < task.EarliestStartTime) {
+                    worker.AddIdleTime(worker.EarliestStartTime, (int)task.EarliestStartTime, task);
+                    worker.EarliestStartTime = (int)task.EarliestStartTime;
+                }
+
 
                 worker.AddTask(worker.EarliestStartTime, worker.EarliestStartTime + task.SimulatedExecutionTime, task);
                 task.Status = BuildStatus.Scheduled;
                 worker.EarliestStartTime += task.SimulatedExecutionTime;
+                task.FinishTime = worker.EarliestStartTime;
                 /*
                  * Step 4: 
                  *  Update the ready list by inserting the nodes that are now ready
@@ -78,8 +84,14 @@ namespace GraphTest.Schedulers
             {
                 Program.Log("\r\nHighest Level Workers: \r\n", w);
             }
+            int total = 0;
             foreach (var item in workerList)
             {
+                total = 0;
+                foreach (var slot in item.FullSchedule) {
+                    total += slot.Size;
+                }
+                Console.WriteLine(total);
                 item.LogSchedule();
             }
         }
