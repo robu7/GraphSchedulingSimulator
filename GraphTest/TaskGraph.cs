@@ -127,7 +127,7 @@ namespace GraphTest
                 /*
                  * Generate edges from old nodes to new
                  */
-                foreach (var oldNode in oldNodes)
+                foreach (var oldNode in DAGgraph.Nodes)
                 {
                     foreach (var newNode in newNodes)
                     {
@@ -139,7 +139,7 @@ namespace GraphTest
                 }
 
                 // Add new nodes to tree
-                oldNodes = newNodes.ToList();
+                //oldNodes = newNodes.ToList();
                 DAGgraph.AddNodes(newNodes);
             }
 
