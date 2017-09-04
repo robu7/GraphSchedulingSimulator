@@ -78,7 +78,8 @@ namespace GraphTest.Schedulers
         static List<TaskNode> allNodes;
         public static int bestSolution;
         public static Dictionary<int, BranchWorker> bestSolutionWorker;
-        public static int branchesExamined; 
+        public static int branchesExamined;
+        public static int possibleBranches;
 
         /// <summary>
         /// 
@@ -121,7 +122,6 @@ namespace GraphTest.Schedulers
         {
             localNonScheduledNodes = allNodes.Where(x => x.Status != BuildStatus.Scheduled).ToList();
 
-
             // Allocate tasks to proccesors using selection pointer,
             // set allocated nodes to scheduled,
             // insert nodes which are now ready to be scheduled into the readyList.
@@ -162,6 +162,7 @@ namespace GraphTest.Schedulers
             //foreach (var item in workerMapping) {
             //    Console.WriteLine(item.Key + ":" + (item.Value.currentTask != null ? item.Value.currentTask.ID : 0) + " fin:" + workerMapping[item.Key].FinishTime);
             //}
+            //Console.WriteLine("PossibleBranches: " + possibleBranches);
             //Console.WriteLine("-------------------");
 
             var highestFinishTime = workerMapping.Values.Max(x => x.FinishTime);
@@ -229,6 +230,12 @@ namespace GraphTest.Schedulers
             // Remove all idle tasks, here represented by null
             readyList.RemoveAll(x => x == null);
 
+            if (readyList.Distinct().Count() != readyList.Count) {
+                //Console.WriteLine();
+                readyList = readyList.Distinct().ToList();
+            }
+
+
             // Determine how many cores will be available at earliestTaskFinishTime
             int coreCount = 0;
             List<int> availableCores = new List<int>();
@@ -260,6 +267,8 @@ namespace GraphTest.Schedulers
             //}
             //Console.WriteLine("\r\n-------------------");
 
+            possibleBranches += backTrackingList.Count;
+
             while (backTrackingList.Count > 0) {
                 var readyListCopy = new List<TaskNode>(readyList);
 
@@ -270,7 +279,7 @@ namespace GraphTest.Schedulers
                 foreach (var item in allNodes) {
                     item.Status = BuildStatus.None;
                     foreach (var worker in workerMapping) {
-                        if (worker.Value.TaskList.Contains(item)) {
+                        if (worker.Value.TaskList.Contains(item) && !readyListCopy.Contains(item)) {
                             item.Status = BuildStatus.Scheduled;
                         }
                     }
@@ -293,6 +302,8 @@ namespace GraphTest.Schedulers
                     if (solutionTime < bestSolution || bestSolution == 0)
                         bestSolution = solutionTime;
                 }
+
+                possibleBranches -= 1;
                 backTrackingList.RemoveAt(0);
             }
 

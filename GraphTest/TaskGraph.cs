@@ -31,6 +31,33 @@ namespace GraphTest
         }
 
         /// <summary>
+        /// Writes the graph to a .gv file with the dot format
+        /// Use one of these commands to create picture with the graph:
+        ///     1. tred graph.gv | dot -T png > graph.png
+        ///     2. dot -T png graph.gv > graph.png
+        /// </summary>
+        public void PrintImage()
+        {
+            StringBuilder dotFormat = new StringBuilder();
+
+            dotFormat.AppendLine();
+            dotFormat.Append("digraph G {");
+
+            foreach (var node in Nodes) {
+                    dotFormat.AppendLine("\t" + node.ID + " [label=\"" + node.ID + "| " + node.SimulatedExecutionTime/100 + "\"]" + ";");
+            }
+            foreach (var edge in Edges) {
+                dotFormat.AppendLine("\t" + edge.Parent.ID + " -> " + edge.Child.ID + ";");
+            }
+
+            dotFormat.Append("}");
+
+            System.IO.File.WriteAllText(@"C:\Users\robda\Documents\graphviz-2.38\graph.gv", dotFormat.ToString());
+
+            // TODO: create a process which runs the create image command
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         public void CreateEdge(TaskNode parent, TaskNode child)

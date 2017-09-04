@@ -163,9 +163,11 @@ namespace GraphTest
                 case "2":
                 case "CP/MISF":
                     CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.ThreadCount);
+                    DAGgraph.PrintImage();
                     //CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.threadCount);
                     tmp.ScheduleDAG(DAGgraph);
 
+                    /*
                     Stopwatch time2 = new Stopwatch();
                     time2.Start();
                     var infoDisplayer = 0;
@@ -176,7 +178,7 @@ namespace GraphTest
                     var parallelTime = time2.ElapsedMilliseconds;
                     time2.Stop();
                     time2.Reset();
-                    Console.WriteLine("DF/IHS took {0}ms", parallelTime);
+                    Console.WriteLine("DF/IHS took {0}ms", parallelTime); */
                     break;
                 case "3":
                 case "Seq":
@@ -219,17 +221,18 @@ namespace GraphTest
             scheduler.ScheduleDAG(DAGgraph);
 
             //var infoDisplayer = new SchedulerInfo(workerList);
+            /*
             var infoDisplayer = 0;
             for (int i = 0; i < Settings.ThreadCount; i++) {
                 ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
-            }
+            }*/
 
             Console.WriteLine("MakeSpan: " + workerList.Max(x => x.EarliestStartTime));
 
 
 
             //new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
-
+            /*
             WaitHandle.WaitAll(waitsignals);
 
             foreach (var item in workerList) {
@@ -244,7 +247,7 @@ namespace GraphTest
             time.Stop();
             time.Reset();
 
-            Console.WriteLine("HLWET took {0}ms",parallelTime);
+            Console.WriteLine("HLWET took {0}ms",parallelTime);*/
         }
 
 
