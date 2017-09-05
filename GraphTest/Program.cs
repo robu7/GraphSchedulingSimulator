@@ -219,35 +219,35 @@ namespace GraphTest
             HighestLevel scheduler = new HighestLevel(DAGgraph, workerList, Settings.ThreadCount);
 
             scheduler.ScheduleDAG(DAGgraph);
-
-            //var infoDisplayer = new SchedulerInfo(workerList);
-            /*
-            var infoDisplayer = 0;
-            for (int i = 0; i < Settings.ThreadCount; i++) {
-                ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
-            }*/
-
             Console.WriteLine("MakeSpan: " + workerList.Max(x => x.EarliestStartTime));
+            //var infoDisplayer = new SchedulerInfo(workerList);
+            bool doWork = false;
+            if (doWork) {
 
 
-
-            //new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
-            /*
-            WaitHandle.WaitAll(waitsignals);
-
-            foreach (var item in workerList) {
-                Console.Write("worker" + item.WorkerID + ":");
-                foreach (var tasks in item.TaskList) {
-                    Console.Write(" " + tasks.ID + ",");
+                var infoDisplayer = 0;
+                for (int i = 0; i < Settings.ThreadCount; i++) {
+                    ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
                 }
-                Console.WriteLine();
+
+                //new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
+
+                WaitHandle.WaitAll(waitsignals);
+
+                foreach (var item in workerList) {
+                    Console.Write("worker" + item.WorkerID + ":");
+                    foreach (var tasks in item.TaskList) {
+                        Console.Write(" " + tasks.ID + ",");
+                    }
+                    Console.WriteLine();
+                }
+
+                var parallelTime = time.ElapsedMilliseconds;
+                time.Stop();
+                time.Reset();
+
+                Console.WriteLine("HLWET took {0}ms", parallelTime);
             }
-
-            var parallelTime = time.ElapsedMilliseconds;
-            time.Stop();
-            time.Reset();
-
-            Console.WriteLine("HLWET took {0}ms",parallelTime);*/
         }
 
 

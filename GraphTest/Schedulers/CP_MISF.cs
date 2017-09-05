@@ -148,6 +148,7 @@ namespace GraphTest.Schedulers
                 }
             }
 
+
             //Console.WriteLine("-------------------");
             //Console.Write("d=" + depth + "   t=" + earliestTaskFinishTime + "\r\nR=[");
             //debugReadylist.ForEach(x => Console.Write((x != null ? x.ID : 0) + ","));
@@ -184,7 +185,7 @@ namespace GraphTest.Schedulers
 
 
         /// <summary>
-        /// 
+        /// Check if necessary to continue branching
         /// </summary>
         private bool DeployBoundingRules(int highestFinishTime)
         {
@@ -208,14 +209,21 @@ namespace GraphTest.Schedulers
                 if (maxLevelValue >= bestSolution)
                     return true;
 
-            }
+                // If the other two bounding rules fails 
 
+            }
             return false;
         }
 
         private int CalculateLowerBound(int highestFinishTime)
         {
-            var combinedCost = (int)Math.Ceiling(localNonScheduledNodes.Sum(x => (double)x.SimulatedExecutionTime / maxCores));
+            int combinedCost;
+            if (localNonScheduledNodes.Count > maxCores) {
+                combinedCost = (int)Math.Ceiling(localNonScheduledNodes.Sum(x => (double)x.SimulatedExecutionTime) / (maxCores));
+            } else
+                combinedCost = 0;
+
+            
             combinedCost += highestFinishTime;
 
             return combinedCost;
@@ -268,11 +276,16 @@ namespace GraphTest.Schedulers
             //Console.WriteLine("\r\n-------------------");
 
             possibleBranches += backTrackingList.Count;
+            if (possibleBranches > 1000) {
+                //Console.WriteLine();
+            }
 
             while (backTrackingList.Count > 0) {
                 var readyListCopy = new List<TaskNode>(readyList);
 
                 //var readyListCopy = readyList.Clone(new Dictionary<int, TaskNode>());
+
+
 
                 // Reset all tasks that where not scheduled at this time,
                 // To prevent faulty nodes being inserted to the readyList
@@ -286,12 +299,23 @@ namespace GraphTest.Schedulers
                     if(localNonScheduledNodes.Contains(item))
                         item.ResetEST();
                 }
+                foreach (var item in readyListCopy) {
+                    if (item?.Status == BuildStatus.Scheduled) {
+                        item.Status = BuildStatus.None;
+                    }
+                }
+
                 //foreach (var item in localNonScheduledNodes) {
                 //    item.Status = BuildStatus.None;
                 //    item.ResetEST();
                 //}
 
                 ++branchesExamined; // just for debug
+                if (depth < 10) {
+                    Console.WriteLine("Depth: " + depth + " checked branches: " + branchesExamined);
+                }
+                
+                //Console.WriteLine("Depth: " + depth + " checked branches: " + branchesExamined);
                 var workerMappingCopy = workerMapping.ToDictionary(x => x.Key, x => x.Value.Clone()); // create copy of the workerMapping
                 var newBranch = new Branch(readyListCopy, earliestTaskFinishTime, depth + 1, coreCount, availableCores.ToArray(), workerMappingCopy, backTrackingList[0]);
 
@@ -389,7 +413,7 @@ namespace GraphTest.Schedulers
                 return;
             var task = readyList[index];
             task.Status = BuildStatus.Scheduled;
-            readyList.AddRange(task.ChildNodes.Where(x => x.IsReadyToSchedule));
+            readyList.AddRange(task.ChildNodes.Where(x => x.IsReadyToSchedule && !readyList.Contains(task)));
             if (readyList.Distinct().Count() != readyList.Count) {
                 //Console.WriteLine();
                 readyList = readyList.Distinct().ToList();

@@ -34,7 +34,13 @@ namespace GraphTest
         public List<TaskNode> ParentNodes { get { return parentNodes; } }
         private List<TaskNode> childNodes;
         public List<TaskNode> ChildNodes { get { return childNodes; } }
-        public int SimulatedExecutionTime { get; set; }
+        public int executionTime;
+        public int SimulatedExecutionTime { get { return executionTime; }
+            set {
+                //executionTime = value;
+                executionTime = (int)Math.Round(value / 1000.0);
+            }
+        }
 
         public BuildStatus Status { get; set; } = BuildStatus.None;
         public ManualResetEvent ReadySignal { get; private set; }
