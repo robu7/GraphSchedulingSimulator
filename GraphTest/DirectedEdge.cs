@@ -32,7 +32,6 @@ namespace GraphTest
         {
             this.parent = n1;
             this.child = n2;
-            this.child.IsEntryNode = false;
         }
 
         public override string ToString()

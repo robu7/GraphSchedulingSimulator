@@ -55,6 +55,8 @@
       <DependentUpon>SchedulerInfo.cs</DependentUpon>
     </Compile>
     <Compile Include="Schedulers\ILP.cs" />
+    <Compile Include="SimulatorSettings.cs" />
+    <Compile Include="TaskEstimator.cs" />
     <Compile Include="TaskNode.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

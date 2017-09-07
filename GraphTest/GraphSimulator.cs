@@ -1,7 +1,10 @@
-﻿using System;
+﻿using GraphTest.Schedulers;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -10,104 +13,166 @@ namespace GraphTest
 {
     class GraphSimulator
     {
+        TaskGraph activeGraph;
+        List<TaskGraph> savedGraphs;
 
-
-    }
-
-
-    /// <summary>
-    /// Manages saving and getting run time history of tasks
-    /// </summary>
-    class TaskExecutionEstimator
-    {
-        private Dictionary<string, XElement> taskElementMapping;
-        private Dictionary<string, List<float>> taskSampleData;
-        private const string fileName = @"C:\CetDev\cetdev\home\tools\vstudio\CETDeveloper\CETDeveloperLib\Machines\Builders\ParallelUtility\TaskExecutionEstimation.xml";
-        private XElement xmlExecutionSamples;
-
-        public TaskExecutionEstimator()
+        public GraphSimulator()
         {
-            taskElementMapping = new Dictionary<string, XElement>();
-            taskSampleData = new Dictionary<string, List<float>>();
-
-            /*
-             * Load the xml file and create a new one if it does not exist
-             */
-            try {
-                xmlExecutionSamples = XElement.Load(fileName);
-            } catch (System.IO.FileNotFoundException) {
-
-                XDocument doc = new XDocument(
-                     new XElement("Tasks", new XElement("Task", new XElement("ID", "test"), new XElement("Samples", new XElement("Sample", 3000)))));
-                doc.Save(fileName);
-
-            } finally {
-                xmlExecutionSamples = XElement.Load(fileName);
-            }
-
-            /*
-             * Find all items in the build with their correlating sample data
-             
-            foreach (var item in itemList) {
-                // Find the task in the xml file
-                var xmlElement = xmlExecutionSamples.Elements("Task").Where(x => x.Element("ID").Value == item.Id).First();
-
-                // Insert it to the dictionaries and save the element
-                taskElementMapping.Add(item.Id, xmlElement);
-                taskSampleData.Add(item.Id, new List<float>());
-
-                // Get and save all sample data to this task
-                foreach (var time in xmlElement.Element("Samples").Elements()) {
-                    taskSampleData[item.Id].Add(float.Parse(time.Value));
-                }
-            }
-            */
+            activeGraph = null;
+            savedGraphs = new List<TaskGraph>();
         }
 
         /// <summary>
-        /// Save the last 10 samples of the task execution time, remove the oldest if more
+        /// 
         /// </summary>
-        public void SaveExecutionTime(string taskID, float executionTime)
+        public void Reset()
         {
-            lock (xmlExecutionSamples) {
-                var tmp = taskElementMapping[taskID];
-                var samples = tmp.Element("Samples").Elements();
+            activeGraph.ResetNodes();
+            //workerList = new List<Worker>();
+            //for (int i = 0; i < Settings.ThreadCount; i++) {
+            //    workerList.Add(new Worker(i));
+            //}
+        }
 
-                // If it is the first sample 
-                if (samples.Count() == 0) {
-                    tmp.Element("Samples").Add(new XElement("Sample", executionTime));
-                }
-                // Or we have reached 10 samples and need to remove one
-                else if (samples.Count() >= 10) {
-                    samples.First().Remove();
-                    samples.Last().AddAfterSelf(new XElement("Sample", executionTime));
-                } else
-                    samples.Last().AddAfterSelf(new XElement("Sample", executionTime));
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Run()
+        {
+            Console.Write(":");
+            string consoleCmd = Console.ReadLine();
 
-
-                xmlExecutionSamples.Save(fileName);
+            while (consoleCmd != "exit") {
+                if (consoleCmd != "")
+                    HandleInput(consoleCmd);
+                Console.Write(":");
+                consoleCmd = Console.ReadLine();
             }
         }
 
         /// <summary>
-        /// Get the average execution time for a specific task
+        /// 
         /// </summary>
-        public float GetEstimatedTime(string taskID)
+        private void HandleInput(string consoleCmd)
         {
+            string[] cmdArgs = consoleCmd.Split();
 
-            if (taskElementMapping.ContainsKey(taskID)) {
-                if (taskSampleData.ContainsKey(taskID))
-                    if (taskSampleData[taskID].Count != 0)
-                        return taskSampleData[taskID].Average();
-                return 3000;
-            } else {
-                var lastElement = xmlExecutionSamples.LastNode ?? xmlExecutionSamples;
-                var newElement = new XElement("Task", new XElement("ID", taskID), new XElement("Samples"));
-                lastElement.AddAfterSelf(newElement);
-                taskElementMapping.Add(taskID, newElement);
-                xmlExecutionSamples.Save(fileName);
-                return 3000;
+            switch (cmdArgs[0]) {
+                case "rand":
+                    Console.WriteLine("Randomizing a new graph....");
+                    activeGraph = TaskGraph.GenerateRandomWeightedDAG();
+                    break;
+                case "cores":
+                    break;
+                case "load":
+                    break;
+                case "print":
+                    Console.WriteLine("Printing graph....");
+                    activeGraph.PrintImage();
+                    activeGraph.PrintTree();
+                    break;
+                case "run":
+                    if (activeGraph == null) {
+                        Console.WriteLine("No graph present, neeed to load or generate one!!");
+                        return;
+                    }
+                    if (cmdArgs.Length == 2)
+                        ExecuteAlgorithm(cmdArgs[1]);
+                    else {
+                        ExecuteAlgorithm();
+                    }                  
+                    break;
+                case "help":
+                    Console.WriteLine("Available commands:");
+                    Console.WriteLine("\trand");
+                    Console.WriteLine("\trun --algorithm");
+                    break;
+                default:
+                    Console.WriteLine("\"" + cmdArgs[0] + "\" command does not exist");
+                    break;
             }
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        void ExecuteAlgorithm(string arg = "")
+        {
+
+            activeGraph.ComputeSLevel();
+            activeGraph.ComputeTLevel();
+
+            if (arg == "") {
+                Console.WriteLine("Choose algorithm by name of number: HLFET::1, CP/MISF::2, ...");
+                arg = Console.ReadLine();
+            }
+
+            Scheduler schedule = null;
+            switch (arg) {
+                case "1":
+                case "HLWET":
+                    Console.WriteLine("Executing HLWET ....");
+                    //HighestLevel HlwetScheduler = new HighestLevel(activeGraph,workerList,Settings.ThreadCount);
+                    schedule = new HighestLevel(activeGraph, Settings.ThreadCount);
+
+                    break;
+                case "ILP":
+                    break;
+                case "2":
+                case "CP/MISF":
+                    Console.WriteLine("Executing CP/MISF ....");
+                    //CP_MISF Cp_MisfScheduler = new CP_MISF(activeGraph, workerList, Settings.ThreadCount);
+                    schedule = new CP_MISF(activeGraph, Settings.ThreadCount);
+                    break;
+                case "3":
+                case "Seq":
+                    Console.WriteLine("Executing Sequencial ....");
+                    schedule = new HighestLevel(activeGraph, 1);
+                    //ExecuteSequencial(activeGraph.SortBySLevel());
+                    break;
+                case "":
+                    Console.WriteLine("Wrong number of arguments");
+                    return;
+                default:
+                    Console.WriteLine(arg + "algorithm does not exist");
+                    return;
+            }
+            ScheduleGraph(schedule); 
+            ExecuteSchedule(schedule);
+            Reset();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void ScheduleGraph(Scheduler schedule)
+        {
+            Stopwatch time = new Stopwatch();
+            time.Start();
+            schedule.ScheduleDAG();
+            var schedulingTime = time.ElapsedMilliseconds;
+            time.Stop();
+            Console.WriteLine("Scheduling took {0}ms", schedulingTime);
+            Console.WriteLine("MakeSpan: " + schedule.GetMakespan());
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private void ExecuteSchedule(Scheduler schedule)
+        {
+            Stopwatch executionTime = new Stopwatch();
+            executionTime.Start();
+            var infoDisplayer = 0;
+            var workerList = schedule.GetWorkers();
+            for (int i = 0; i < Settings.ThreadCount; i++) {
+                ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList.ElementAt(i), infoDisplayer });
+            }
+            //WaitHandle.WaitAll(waitsignals);
+            WaitHandle.WaitAll(schedule.GetWorkerSingnals().ToArray());
+            var parallelTime = executionTime.ElapsedMilliseconds;
+            executionTime.Stop();
+            Console.WriteLine("Execution took {0}ms", parallelTime);
+        }
+
     }
 }

@@ -16,10 +16,6 @@ namespace GraphTest.Schedulers
         protected TaskGraph graph;
         protected List<Worker> workerList;
 
-        // Array of signals which is used to notify the master instance when a worker is done. 
-        // Worker 1 (workList[0]) will have a refrence to waitSignals[0] etc....
-        protected ManualResetEvent[] waitSignals;
-
         protected Scheduler(TaskGraph graph, int? maxThreadCount)
         {
             this.graph = graph;
@@ -36,16 +32,37 @@ namespace GraphTest.Schedulers
             } else
                 WorkerCount = (int)maxThreadCount;
 
-            ThreadPool.SetMaxThreads(WorkerCount, WorkerCount);
-
-            waitSignals = new ManualResetEvent[WorkerCount];
             for (int i = 0; i < WorkerCount; i++) {
-                waitSignals[i] = new ManualResetEvent(false);
-                workerList.Add(new Worker(ref waitSignals[i], i + 1));
+                workerList.Add(new Worker(i));
             }
+
         }
 
-        public abstract void ScheduleDAG(TaskGraph graph);
+        public IEnumerable<Worker> GetWorkers()
+        {
+            return workerList.AsEnumerable();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IEnumerable<ManualResetEvent> GetWorkerSingnals()
+        {
+            foreach (var worker in workerList) {
+                yield return worker.ReadySignal;
+            }
+            yield break;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int GetMakespan()
+        {
+            return workerList.Max(x => x.EarliestStartTime);
+        }
+
+        public abstract void ScheduleDAG();
         public abstract void ExecuteSchedule();
     }
 }

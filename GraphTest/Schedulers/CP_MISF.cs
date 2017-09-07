@@ -210,9 +210,20 @@ namespace GraphTest.Schedulers
                     return true;
 
                 // If the other two bounding rules fails 
+                //FernadezLowerBound((int)maxLevelValue);
 
             }
             return false;
+        }
+
+        private void FernadezLowerBound(int maxLevelValue)
+        {
+            var hu = maxLevelValue + (int)Math.Ceiling(q(localNonScheduledNodes));
+        }
+
+        private double q(List<TaskNode> localNonScheduledNodes)
+        {
+            return 0.00;
         }
 
         private int CalculateLowerBound(int highestFinishTime)
@@ -413,7 +424,7 @@ namespace GraphTest.Schedulers
                 return;
             var task = readyList[index];
             task.Status = BuildStatus.Scheduled;
-            readyList.AddRange(task.ChildNodes.Where(x => x.IsReadyToSchedule && !readyList.Contains(task)));
+            readyList.AddRange(task.ChildNodes.Where(x => x.IsReadyToSchedule && !readyList.Contains(x)));
             if (readyList.Distinct().Count() != readyList.Count) {
                 //Console.WriteLine();
                 readyList = readyList.Distinct().ToList();
@@ -447,19 +458,16 @@ namespace GraphTest.Schedulers
     /// </summary>
     class CP_MISF : Scheduler
     {
-        List<Worker> workerList;
 
-        public CP_MISF(TaskGraph DAGgraph, List<Worker> workerList, int? maxThreadCount = null) : base(DAGgraph, maxThreadCount)
-        {
-            this.workerList = workerList;
-        }
+        public CP_MISF(TaskGraph DAGgraph, int? maxThreadCount = null) : base(DAGgraph, maxThreadCount)
+        {}
 
         public override void ExecuteSchedule()
         {
             throw new NotImplementedException();
         }
 
-        public override void ScheduleDAG(TaskGraph graph)
+        public override void ScheduleDAG()
         {
 
             // Part 1: Preproccessing 

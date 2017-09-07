@@ -17,13 +17,16 @@ namespace GraphTest
             Edges = new List<DirectedEdge>();
         }
 
-        public void ResetTasks()
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ResetNodes()
         {
             foreach (var node in Nodes) {
-                node.ReadySignal.Reset();
+                node.Reset();
             }
         }
-
 
         public void AddNodes(List<TaskNode> newNodes)
         {
@@ -52,7 +55,7 @@ namespace GraphTest
 
             dotFormat.Append("}");
 
-            System.IO.File.WriteAllText(@"C:\Users\robda\Documents\graphviz-2.38\graph.gv", dotFormat.ToString());
+            System.IO.File.WriteAllText(@"graph.gv", dotFormat.ToString());
 
             // TODO: create a process which runs the create image command
         }
@@ -66,6 +69,8 @@ namespace GraphTest
             parent.AddChild(child);
             child.AddParent(parent);
         }
+
+
 
         /// <summary>
         /// 

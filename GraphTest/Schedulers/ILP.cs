@@ -19,7 +19,7 @@ namespace GraphTest.Schedulers
             throw new NotImplementedException();
         }
 
-        public override void ScheduleDAG(TaskGraph graph)
+        public override void ScheduleDAG()
         {
             int cMax = 0;
 

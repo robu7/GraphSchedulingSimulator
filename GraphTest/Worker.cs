@@ -56,8 +56,8 @@ namespace GraphTest
     {
         public int WorkerID { get; private set; }
         private List<ScheduleSlot> taskList;
-        public List<ScheduleSlot> FullSchedule { get { return taskList; } }
-        public IEnumerable<TaskNode> TaskList {
+        public List<ScheduleSlot> FullSchedule { get { return taskList; } } // Returns entire schedule, including idle tasks
+        public IEnumerable<TaskNode> TaskList { // Returns all tasks tasks that need processing
             get {
                 foreach (var slot in taskList) {
                     if(slot is WorkSlot) {
@@ -69,14 +69,22 @@ namespace GraphTest
         }
         public int EarliestStartTime { get; set; }
         private ManualResetEvent readySignal;
+        public ManualResetEvent ReadySignal { get { return readySignal; } }
 
-        public Worker(ref ManualResetEvent waitSignal, int ID)
+        public Worker(int ID)
         {
             WorkerID = ID;
-            readySignal = waitSignal;
+            //readySignal = waitSignal;
+            Reset();
+            
+        }
+        public void Reset()
+        {
+            readySignal = new ManualResetEvent(false);
             EarliestStartTime = 0;
             taskList = new List<ScheduleSlot>();
         }
+
 
         public void AddTask(int start, int end, TaskNode task) { taskList.Add(new WorkSlot(start, end, task)); }
         public void AddIdleTime(int start, int end, TaskNode nextTask) { taskList.Add(new IdleSlot(start, end, nextTask)); }

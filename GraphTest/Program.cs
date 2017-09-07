@@ -16,32 +16,10 @@ namespace GraphTest
 
     class Program
     {
-        static List<List<TaskNode>> threadLists;
-        static List<Worker> workerList;
-        static int[] earliestStartTime;
-        static ManualResetEvent[] waitsignals;
-        public static StreamWriter w;
-        static public TaskGraph DAGgraph;
-
-        static void Reset()
-        {
-            earliestStartTime = new int[Settings.ThreadCount];
-            waitsignals = new ManualResetEvent[Settings.ThreadCount];
-            DAGgraph.ResetTasks();
-            // Init all threadlists, one per thread
-            threadLists = new List<List<TaskNode>>();
-            workerList = new List<Worker>();
-            for (int i = 0; i < Settings.ThreadCount; i++) {
-                threadLists.Add(new List<TaskNode>());
-                waitsignals[i] = new ManualResetEvent(false);
-                earliestStartTime[i] = 0;
-                workerList.Add(new Worker(ref waitsignals[i], i));
-            }
-        }
-
-
         static void Main(string[] args)
         {
+            GraphSimulator tmp = new GraphSimulator();
+            tmp.Run();
             //w = new StreamWriter()
             //using (w = File.AppendText("log.txt"))
             //{
@@ -49,20 +27,20 @@ namespace GraphTest
             //}
 
             // Produce a randomgraph for testing
-            DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
+            //DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
             //DAGgraph = TaskGraph.GenerateTestGraph();
 
             // Init per thread variables 
-            Reset();
+            //Reset();
 
-            ThreadPool.SetMaxThreads(Settings.ThreadCount, Settings.ThreadCount);
+            //ThreadPool.SetMaxThreads(Settings.ThreadCount, Settings.ThreadCount);
 
             //foreach (var item in DAGgraph.SortByID())
             //{
             //    item.LogNodeInfo();
             //}
 
-            TaskExecutionEstimator test = new TaskExecutionEstimator();
+            //TaskExecutionEstimator test = new TaskExecutionEstimator();
 
             //using (w = File.AppendText("log.txt"))
             //{
@@ -70,184 +48,7 @@ namespace GraphTest
             //    Log("-------------------------------", w);
             //}
 
-            Console.Write(":");
-            string consoleCmd = Console.ReadLine();
 
-            while (consoleCmd != "exit")
-            {
-                if(consoleCmd != "")
-                    HandleInput(consoleCmd);
-                Console.Write(":");
-                consoleCmd = Console.ReadLine();
-            }
-        }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        static void HandleInput(string input)
-        {
-            string[] cmdArgs = input.Split();
-            //Console.WriteLine(input);
-
-            switch (cmdArgs[0])
-            {
-                case "rand":
-                    Console.WriteLine("Randomizing a new graph....");
-                    DAGgraph = TaskGraph.GenerateRandomWeightedDAG();
-                    break;
-                case "cores":
-                    break;
-                case "load":
-                    break;
-                case "print":
-                    Console.WriteLine("Printing graph....");
-                    DAGgraph.PrintTree();
-                    break;
-                case "run":
-                    if(DAGgraph == null) {
-                        Console.WriteLine("No graph present, neeed to load or generate one!!");
-                    }
-                       
-                    if (cmdArgs.Length == 2)
-                        ExecuteAlgorithm(cmdArgs[1]);
-                    else
-                    {
-                        ExecuteAlgorithm();
-                    }
-                    Reset();
-                    break;
-                case "help":
-                    Console.WriteLine("Available commands:");
-                    Console.WriteLine("\trand");
-                    Console.WriteLine("\trun --algorithm");
-                    break;
-                default:
-                    Console.WriteLine("\"" + cmdArgs[0] +"\" command does not exist");
-                    break;
-            }
-
-            foreach (var arg in cmdArgs)
-            {
-                
-            }
-        }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        static void ExecuteAlgorithm(string arg = "")
-        {
-            Stopwatch time = new Stopwatch();
-            DAGgraph.ComputeSLevel();
-            DAGgraph.ComputeTLevel();
-
-
-            if (arg == "") {
-                Console.WriteLine("Choose algorithm by name of number: HLFET::1, CP/MISF::2, ...");
-                arg = Console.ReadLine();
-            }
-
-            switch(arg)
-            {
-                case "1":
-                case "HLWET":
-                    Console.WriteLine("Executing HLWET ....");
-                    ExecuteHLWET();
-                    Reset();
-                    break;
-                case "ILP":
-                    break;
-                case "2":
-                case "CP/MISF":
-                    CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.ThreadCount);
-                    DAGgraph.PrintImage();
-                    //CP_MISF tmp = new CP_MISF(DAGgraph, workerList, Settings.threadCount);
-                    tmp.ScheduleDAG(DAGgraph);
-
-                    /*
-                    Stopwatch time2 = new Stopwatch();
-                    time2.Start();
-                    var infoDisplayer = 0;
-                    for (int i = 0; i < Settings.ThreadCount; i++) {
-                        ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
-                    }
-                    WaitHandle.WaitAll(waitsignals);
-                    var parallelTime = time2.ElapsedMilliseconds;
-                    time2.Stop();
-                    time2.Reset();
-                    Console.WriteLine("DF/IHS took {0}ms", parallelTime); */
-                    break;
-                case "3":
-                case "Seq":
-                    ExecuteSequencial(DAGgraph.SortBySLevel());
-                    break;                    
-                case "":
-                    Console.WriteLine("Wrong number of arguments");
-                    break;
-                default:
-                    Console.WriteLine(arg + "algorithm does not exist");
-                    break;
-            }
-        }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static void ExecuteSchedule(Scheduler schedule)
-        {
-            Stopwatch time = new Stopwatch();
-            time.Start();
-            
-            var parallelTime = time.ElapsedMilliseconds;
-            time.Stop();
-            time.Reset();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static void ExecuteHLWET()
-        {
-
-            Stopwatch time = new Stopwatch();
-            time.Start();
-
-            HighestLevel scheduler = new HighestLevel(DAGgraph, workerList, Settings.ThreadCount);
-
-            scheduler.ScheduleDAG(DAGgraph);
-            Console.WriteLine("MakeSpan: " + workerList.Max(x => x.EarliestStartTime));
-            //var infoDisplayer = new SchedulerInfo(workerList);
-            bool doWork = false;
-            if (doWork) {
-
-
-                var infoDisplayer = 0;
-                for (int i = 0; i < Settings.ThreadCount; i++) {
-                    ThreadPool.QueueUserWorkItem(Worker.ExecuteTaskList, new object[] { workerList[i], infoDisplayer });
-                }
-
-                //new Thread(() => new SchedulerInfo(workerList).ShowDialog()).Start();
-
-                WaitHandle.WaitAll(waitsignals);
-
-                foreach (var item in workerList) {
-                    Console.Write("worker" + item.WorkerID + ":");
-                    foreach (var tasks in item.TaskList) {
-                        Console.Write(" " + tasks.ID + ",");
-                    }
-                    Console.WriteLine();
-                }
-
-                var parallelTime = time.ElapsedMilliseconds;
-                time.Stop();
-                time.Reset();
-
-                Console.WriteLine("HLWET took {0}ms", parallelTime);
-            }
         }
 
 

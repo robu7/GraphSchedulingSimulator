@@ -15,10 +15,8 @@ namespace GraphTest.Schedulers
     class HighestLevel : Scheduler
     {
 
-        public HighestLevel(TaskGraph DAGgraph, List<Worker> workerList, int? maxThreadCount = null) : base(DAGgraph, maxThreadCount)
-        {
-            this.workerList = workerList;
-        }
+        public HighestLevel(TaskGraph DAGgraph, int? maxThreadCount = null) : base(DAGgraph, maxThreadCount)
+        {}
 
         public override void ExecuteSchedule()
         {
@@ -27,14 +25,14 @@ namespace GraphTest.Schedulers
                 //worker.ExecuteTaskList(lookupById);
             }
             // Wait for all workers to finish their tasklist
-            WaitHandle.WaitAll(waitSignals);
+            //WaitHandle.WaitAll(waitSignals);
 
 
 
             Console.WriteLine("Schedule Makespan: " + workerList.Max(x => x.EarliestStartTime));
         }
 
-        public override void ScheduleDAG(TaskGraph DAGgraph)
+        public override void ScheduleDAG()
         {
 
             // Step 1: Sort by Static b-level
@@ -91,7 +89,7 @@ namespace GraphTest.Schedulers
                 foreach (var slot in item.FullSchedule) {
                     total += slot.Size;
                 }
-                Console.WriteLine(total);
+                Console.WriteLine("Worker"+item.WorkerID + ": "+ total);
                 item.LogSchedule();
             }
         }

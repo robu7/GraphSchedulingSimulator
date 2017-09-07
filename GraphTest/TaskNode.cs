@@ -27,23 +27,33 @@ namespace GraphTest
     public class TaskNode
     {
         public int ID { get; }
-        public bool IsEntryNode { get; set; }
-        private bool isCriticalNode;
+        public BuildStatus Status { get; set; } = BuildStatus.None;
+        public ManualResetEvent ReadySignal { get; private set; }
 
         private List<TaskNode> parentNodes;
         public List<TaskNode> ParentNodes { get { return parentNodes; } }
         private List<TaskNode> childNodes;
         public List<TaskNode> ChildNodes { get { return childNodes; } }
+
         public int executionTime;
         public int SimulatedExecutionTime { get { return executionTime; }
             set {
-                //executionTime = value;
-                executionTime = (int)Math.Round(value / 1000.0);
+                executionTime = value;
+                //executionTime = (int)Math.Round(value / 1000.0);
             }
         }
 
-        public BuildStatus Status { get; set; } = BuildStatus.None;
-        public ManualResetEvent ReadySignal { get; private set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Reset()
+        {
+            earliestStartTime = 0;
+            finishTime = 0;
+            Status = BuildStatus.None;
+            ReadySignal.Reset();
+        }
+
 
         /// <summary>
         /// 
@@ -113,7 +123,6 @@ namespace GraphTest
             childNodes = new List<TaskNode>();
             tLevel = null;
             slLevel = null;
-            IsEntryNode = true;
         }
 
         /// <summary>
