@@ -130,9 +130,12 @@ namespace GraphTest.Schedulers
             for (int i = 0; i < availableCores.Length; i++) {
                 int coreID = availableCores[i];
                 var task = readyList[selectionPointer[i]];
+                if (task != null) {
+                    task.Status = BuildStatus.Scheduled;
+                }
                 workerMapping[coreID].AssignTask(task, totalTime);
                 localNonScheduledNodes.Remove(readyList[selectionPointer[i]]);
-                AddNewReadyNodes(readyList, selectionPointer[i]);
+                //AddNewReadyNodes(readyList, selectionPointer[i]);
                 itemsToBeRemoved.Add(readyList[selectionPointer[i]]);
             }
             foreach (var item in itemsToBeRemoved) {
@@ -140,6 +143,8 @@ namespace GraphTest.Schedulers
             }
 
             this.earliestTaskFinishTime = FindEarliestTaskFinishTime();
+
+            readyList.AddRange(localNonScheduledNodes.Where(x => x.IsReadyToSchedule && x.EarliestStartTime <= earliestTaskFinishTime));
 
             int coreCount = 0;
             foreach (var item in workerMapping) {
