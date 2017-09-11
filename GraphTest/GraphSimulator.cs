@@ -125,6 +125,10 @@ namespace GraphTest
                     schedule = new CP_MISF(activeGraph, Settings.ThreadCount);
                     break;
                 case "3":
+                case "Dynamic":
+                    schedule = new 
+                    return;
+                case "4":
                 case "Seq":
                     Console.WriteLine("Executing Sequencial ....");
                     schedule = new HighestLevel(activeGraph, 1);
