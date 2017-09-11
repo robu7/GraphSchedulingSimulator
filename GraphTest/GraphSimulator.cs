@@ -126,7 +126,10 @@ namespace GraphTest
                     break;
                 case "3":
                 case "Dynamic":
-                    schedule = new 
+                    Console.WriteLine("Executing Dynamic ....");
+                    schedule = new Dynamic(activeGraph, Settings.ThreadCount);
+                    schedule.ExecuteSchedule();
+                    Reset();
                     return;
                 case "4":
                 case "Seq":
