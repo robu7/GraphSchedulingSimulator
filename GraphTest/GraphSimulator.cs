@@ -61,6 +61,7 @@ namespace GraphTest
                 case "rand":
                     Console.WriteLine("Randomizing a new graph....");
                     activeGraph = TaskGraph.GenerateRandomWeightedDAG();
+                    activeGraph.PrintImage();
                     break;
                 case "cores":
                     break;

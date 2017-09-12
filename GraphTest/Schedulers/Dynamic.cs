@@ -102,8 +102,6 @@ namespace GraphTest.Schedulers
 
         public void WaitForReadyTasks()
         {
-
-            
             if (readyList.Count == 0) {
                 TasksReady.Reset();
             }

@@ -57,6 +57,15 @@ namespace GraphTest
 
             System.IO.File.WriteAllText(@"graph.gv", dotFormat.ToString());
 
+            System.Diagnostics.Process process = new System.Diagnostics.Process();
+            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+            startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+            //startInfo.WorkingDirectory = @"C:\Users\robda\Documents\graphviz-2.38\";
+            startInfo.FileName = "cmd.exe";
+            startInfo.Arguments = "/C tred graph.gv | dot -T png > graph.png";
+            process.StartInfo = startInfo;
+            process.Start();
+
             // TODO: create a process which runs the create image command
         }
 

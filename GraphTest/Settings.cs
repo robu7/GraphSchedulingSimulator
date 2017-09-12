@@ -14,7 +14,7 @@ namespace GraphTest
         public static int maxWidth = 10; // Maximum width of the graph
         public static int minSimTime = 3000;
         public static int maxSimTime = 14000;
-        public static double changeOfEdge = 60;
+        public static double changeOfEdge = 40;
         public static int ThreadCount { get; set; } = 4;
 
         /// <summary>
