@@ -42,7 +42,7 @@ namespace GraphTest.Schedulers
 
             workers.WaitForAllWorker();
 
-            Console.WriteLine("Dynmic algorithm took: " + time.ElapsedMilliseconds + "ms");
+            Console.WriteLine("Dynamic algorithm took: " + time.ElapsedMilliseconds + "ms");
             time.Stop();
         }
 

@@ -144,7 +144,7 @@ namespace GraphTest.Schedulers
 
             this.earliestTaskFinishTime = FindEarliestTaskFinishTime();
 
-            readyList.AddRange(localNonScheduledNodes.Where(x => x.IsReadyToSchedule && x.EarliestStartTime <= earliestTaskFinishTime));
+            readyList.AddRange(localNonScheduledNodes.Where(x => x.IsReadyToSchedule && !readyList.Contains(x) && x.EarliestStartTime <= earliestTaskFinishTime));
 
             int coreCount = 0;
             foreach (var item in workerMapping) {

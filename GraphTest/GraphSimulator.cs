@@ -136,6 +136,7 @@ namespace GraphTest
                 case "Seq":
                     Console.WriteLine("Executing Sequencial ....");
                     schedule = new HighestLevel(activeGraph, 1);
+                    Settings.SetWorkerCount(1);
                     //ExecuteSequencial(activeGraph.SortBySLevel());
                     break;
                 case "":

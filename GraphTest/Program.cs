@@ -20,6 +20,7 @@ namespace GraphTest
         {
             GraphSimulator tmp = new GraphSimulator();
             tmp.Run();
+
             //w = new StreamWriter()
             //using (w = File.AppendText("log.txt"))
             //{
