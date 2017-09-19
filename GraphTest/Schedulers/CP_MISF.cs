@@ -222,9 +222,17 @@ namespace GraphTest.Schedulers
             return false;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private bool FernadezLowerBound(int maxLevelValue)
         {
-            var hu = maxLevelValue + (int)Math.Ceiling(q(localNonScheduledNodes, maxLevelValue));
+            var tmp = (int)Math.Ceiling(q(localNonScheduledNodes, maxLevelValue));
+            if (tmp > 0) {
+                Console.WriteLine();
+            }
+            var hu = maxLevelValue + tmp;
+
 
             if (hu >= bestSolution)
                 return true;
@@ -232,6 +240,9 @@ namespace GraphTest.Schedulers
             return false;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private double q(List<TaskNode> localNonScheduledNodes, int maxLevelValue)
         {
             var interval = maxLevelValue - earliestTaskFinishTime;
@@ -249,11 +260,17 @@ namespace GraphTest.Schedulers
             return maxValue;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private int IntegralCalculation(int t, int maxLevelValue)
         {
             return LoadDensityFunction(t, maxLevelValue) - LoadDensityFunction(0, maxLevelValue);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private int LoadDensityFunction(int t, int maxLevelValue)
         {
 
@@ -263,11 +280,7 @@ namespace GraphTest.Schedulers
                 var t_hu = maxLevelValue - earliestTaskFinishTime - task.slLevel;
 
                 sum += (t >= t_hu) && (t <= (t_hu + task.SimulatedExecutionTime))? 1 : 0;
-
             }
-
-            if(sum > 10)
-                Console.WriteLine();
 
             return sum;
         }
