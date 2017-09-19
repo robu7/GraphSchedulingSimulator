@@ -180,7 +180,7 @@ namespace GraphTest.Schedulers
                 return highestFinishTime;
             }
 
-            if (DeployBoundingRules(highestFinishTime))
+            if (DeployBoundingRules())
                 return 0;
 
             GenerateBranchAlternatives();
@@ -192,13 +192,13 @@ namespace GraphTest.Schedulers
         /// <summary>
         /// Check if necessary to continue branching
         /// </summary>
-        private bool DeployBoundingRules(int highestFinishTime)
+        private bool DeployBoundingRules()
         {
             if (bestSolution != 0) {
 
                // Console.WriteLine("Best:"+bestSolution);
 
-                int lowerBoundValue = CalculateLowerBound(highestFinishTime);
+                int lowerBoundValue = CalculateLowerBound(earliestTaskFinishTime);
                 //Console.WriteLine("Lower1:"+lowerBoundValue);
                 // Find the time where the earliest task is finished and
                 // compare with lower bound and best solution
@@ -209,27 +209,69 @@ namespace GraphTest.Schedulers
                 if (lowerBoundValue >= bestSolution)
                     return true;
 
-                var maxLevelValue = localNonScheduledNodes.Max(x => x.slLevel) + highestFinishTime;
+                var maxLevelValue = localNonScheduledNodes.Max(x => x.slLevel) + earliestTaskFinishTime;
                 //Console.WriteLine("Lower2:"+maxLevelValue);
                 if (maxLevelValue >= bestSolution)
                     return true;
 
                 // If the other two bounding rules fails 
-                //FernadezLowerBound((int)maxLevelValue);
+                if (maxLevelValue != null && FernadezLowerBound((int)maxLevelValue))
+                    return true;
 
             }
             return false;
         }
 
-        private void FernadezLowerBound(int maxLevelValue)
+        private bool FernadezLowerBound(int maxLevelValue)
         {
-            var hu = maxLevelValue + (int)Math.Ceiling(q(localNonScheduledNodes));
+            var hu = maxLevelValue + (int)Math.Ceiling(q(localNonScheduledNodes, maxLevelValue));
+
+            if (hu >= bestSolution)
+                return true;
+
+            return false;
         }
 
-        private double q(List<TaskNode> localNonScheduledNodes)
+        private double q(List<TaskNode> localNonScheduledNodes, int maxLevelValue)
         {
-            return 0.00;
+            var interval = maxLevelValue - earliestTaskFinishTime;
+
+            int maxValue = 0;
+            int value = 0;
+            for (int i = 0; i <= interval; i++) {
+                value = -i + (1 / maxCores) * IntegralCalculation(i, maxLevelValue);
+
+                if (value > maxValue)
+                    maxValue = value;
+            }
+
+
+            return maxValue;
         }
+
+        private int IntegralCalculation(int t, int maxLevelValue)
+        {
+            return LoadDensityFunction(t, maxLevelValue) - LoadDensityFunction(0, maxLevelValue);
+        }
+
+        private int LoadDensityFunction(int t, int maxLevelValue)
+        {
+
+            int sum = 0;
+
+            foreach (var task in localNonScheduledNodes) {
+                var t_hu = maxLevelValue - earliestTaskFinishTime - task.slLevel;
+
+                sum += (t >= t_hu) && (t <= (t_hu + task.SimulatedExecutionTime))? 1 : 0;
+
+            }
+
+            if(sum > 10)
+                Console.WriteLine();
+
+            return sum;
+        }
+
 
         private int CalculateLowerBound(int highestFinishTime)
         {
