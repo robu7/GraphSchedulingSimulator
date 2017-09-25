@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace GraphTest.Schedulers
 {
@@ -196,21 +197,15 @@ namespace GraphTest.Schedulers
         {
             if (bestSolution != 0) {
 
-               // Console.WriteLine("Best:"+bestSolution);
-
                 int lowerBoundValue = CalculateLowerBound(earliestTaskFinishTime);
-                //Console.WriteLine("Lower1:"+lowerBoundValue);
                 // Find the time where the earliest task is finished and
                 // compare with lower bound and best solution
                 // if higher then terminate branch
-
-                //return new Tuple<int, Dictionary<int, BranchWorker>>(highestFinishTime,workerMapping);
 
                 if (lowerBoundValue >= bestSolution)
                     return true;
 
                 var maxLevelValue = localNonScheduledNodes.Max(x => x.slLevel) + earliestTaskFinishTime;
-                //Console.WriteLine("Lower2:"+maxLevelValue);
                 if (maxLevelValue >= bestSolution)
                     return true;
 
@@ -225,14 +220,27 @@ namespace GraphTest.Schedulers
         /// <summary>
         /// 
         /// </summary>
+        private int CalculateLowerBound(int highestFinishTime)
+        {
+            int combinedCost;
+            if (localNonScheduledNodes.Count > maxCores) {
+                combinedCost = (int)Math.Ceiling(localNonScheduledNodes.Sum(x => (double)x.SimulatedExecutionTime) / (maxCores));
+            } else
+                combinedCost = 0;
+
+
+            combinedCost += highestFinishTime;
+
+            return combinedCost;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         private bool FernadezLowerBound(int maxLevelValue)
         {
             var tmp = (int)Math.Ceiling(q(localNonScheduledNodes, maxLevelValue));
-            if (tmp > 0) {
-                Console.WriteLine();
-            }
             var hu = maxLevelValue + tmp;
-
 
             if (hu >= bestSolution)
                 return true;
@@ -247,15 +255,18 @@ namespace GraphTest.Schedulers
         {
             var interval = maxLevelValue - earliestTaskFinishTime;
 
-            int maxValue = 0;
-            int value = 0;
+            double maxValue = 0;
+            double value = 0;
             for (int i = 0; i <= interval; i++) {
-                value = -i + (1 / maxCores) * IntegralCalculation(i, maxLevelValue);
+
+                var tmp = IntegralCalculation(i, maxLevelValue);
+                var tmp2 = (1.0 / maxCores);
+                value = -i + tmp2 * tmp;
+                //value = -i + (1.0 / maxCores) * IntegralCalculation(i, maxLevelValue);
 
                 if (value > maxValue)
                     maxValue = value;
             }
-
 
             return maxValue;
         }
@@ -263,7 +274,7 @@ namespace GraphTest.Schedulers
         /// <summary>
         /// 
         /// </summary>
-        private int IntegralCalculation(int t, int maxLevelValue)
+        private double IntegralCalculation(int t, int maxLevelValue)
         {
             return LoadDensityFunction(t, maxLevelValue) - LoadDensityFunction(0, maxLevelValue);
         }
@@ -273,7 +284,6 @@ namespace GraphTest.Schedulers
         /// </summary>
         private int LoadDensityFunction(int t, int maxLevelValue)
         {
-
             int sum = 0;
 
             foreach (var task in localNonScheduledNodes) {
@@ -282,22 +292,10 @@ namespace GraphTest.Schedulers
                 sum += (t >= t_hu) && (t <= (t_hu + task.SimulatedExecutionTime))? 1 : 0;
             }
 
+            Console.WriteLine(sum +"------- " + t);
+            Thread.Sleep(100);
+
             return sum;
-        }
-
-
-        private int CalculateLowerBound(int highestFinishTime)
-        {
-            int combinedCost;
-            if (localNonScheduledNodes.Count > maxCores) {
-                combinedCost = (int)Math.Ceiling(localNonScheduledNodes.Sum(x => (double)x.SimulatedExecutionTime) / (maxCores));
-            } else
-                combinedCost = 0;
-
-            
-            combinedCost += highestFinishTime;
-
-            return combinedCost;
         }
 
 
@@ -314,7 +312,6 @@ namespace GraphTest.Schedulers
                 readyList = readyList.Distinct().ToList();
             }
 
-
             // Determine how many cores will be available at earliestTaskFinishTime
             int coreCount = 0;
             List<int> availableCores = new List<int>();
@@ -328,7 +325,6 @@ namespace GraphTest.Schedulers
 
             this.numberOfAvailableCores = coreCount;
             this.availableCores = availableCores.ToArray();
-
 
             // First determine how many idle nodes that should be available
             int numberOfIdleNodes = GenerateIdleNodes(readyList);
@@ -355,8 +351,6 @@ namespace GraphTest.Schedulers
                 var readyListCopy = new List<TaskNode>(readyList);
 
                 //var readyListCopy = readyList.Clone(new Dictionary<int, TaskNode>());
-
-
 
                 // Reset all tasks that where not scheduled at this time,
                 // To prevent faulty nodes being inserted to the readyList

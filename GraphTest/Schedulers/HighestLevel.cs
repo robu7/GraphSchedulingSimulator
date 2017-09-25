@@ -153,16 +153,18 @@ namespace GraphTest.Schedulers
         /// </summary>
         private Worker GetWorkerWithMinEst()
         {
-            Worker retWorker = workerList[0];
+            return (workerList.OrderBy(y => y.EarliestStartTime))?.First();
 
-            foreach (var worker in workerList)
-            {
-                if (worker.EarliestStartTime < retWorker.EarliestStartTime)
-                {
-                    retWorker = worker;
-                }                
-            }
-            return retWorker;
+            //Worker retWorker = workerList[0];
+
+            //foreach (var worker in workerList)
+            //{
+            //    if (worker.EarliestStartTime < retWorker.EarliestStartTime)
+            //    {
+            //        retWorker = worker;
+            //    }                
+            //}
+            //return retWorker;
         }
     }
 }
