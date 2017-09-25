@@ -94,6 +94,59 @@ namespace GraphTest.Schedulers
             }
         }
 
+        ///// <summary>
+        ///// Insert ready task into idle slots to minimize idle time
+        ///// </summary>
+        //private void UtilizeIdleSlot(List<TaskNode> readyList, IdleSlot idleSlot, Worker worker)
+        //{
+        //    // Extract all readyItems which can fit in the idle slot
+        //    var viableTasks = readyList.Where(x => (x.Weight <= idleSlot.Size) && (x.EarliestStartTime <= idleSlot.StartTime)).ToList();
+        //    //var viableTasks = readyList.Where(x => (x.Weight <= idleSlot.Size)).ToList();
+        //    viableTasks.OrderBy(x => x.EarliestStartTime);
+
+        //    /*
+        //     * Check if no other worker can allow earlier scheduling,
+        //     * 
+        //     */
+        //    IdleSlot slotBeforeTask = null;
+        //    IdleSlot slotAfterTask = null;
+        //    foreach (var task in viableTasks) {
+
+        //        if (workerList.Where(x => x.EarliestStartTime < task.EarliestStartTime).Count() > 0)
+        //            continue;
+
+        //        int oldStartTime = idleSlot.StartTime;
+        //        idleSlot.StartTime = (int)task.EarliestStartTime;
+
+        //        if (oldStartTime != idleSlot.StartTime) {
+        //            slotBeforeTask = worker.CreateIdleSlot(oldStartTime, idleSlot.StartTime, task);
+        //        }
+
+        //        int oldEndTime = idleSlot.EndTime;
+        //        idleSlot.EndTime = idleSlot.StartTime + task.Weight;
+
+        //        if (oldEndTime != idleSlot.EndTime) {
+        //            slotAfterTask = worker.CreateIdleSlot(idleSlot.EndTime, oldEndTime, idleSlot.NextExecutableTask);
+        //        }
+
+        //        worker.InsertAheadOfTask(task, idleSlot.NextExecutableTask);
+        //        readyList.Remove(task);
+        //        task.Status = BuildStatus.Scheduled;
+
+        //        worker.RemoveIdleSlot(idleSlot);
+
+        //        if (slotBeforeTask != null) {
+        //            UtilizeIdleSlot(readyList, slotBeforeTask, worker);
+        //        }
+        //        if (slotAfterTask != null) {
+        //            UtilizeIdleSlot(readyList, slotAfterTask, worker);
+        //        }
+
+        //        readyList.AddRange(task.ChildNodes.Where(x => x.ReadyToSchedule));
+        //        break;
+        //    }
+        //}
+
 
         /// <summary>
         /// Find the worker which allows earliest start time 
