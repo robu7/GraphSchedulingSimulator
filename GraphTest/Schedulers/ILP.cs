@@ -31,171 +31,149 @@ namespace GraphTest.Schedulers
 
 
 
+//using Microsoft.SolverFoundation.Services;
 //using System;
+//using System.Collections;
 //using System.Collections.Generic;
 //using System.Linq;
 //using System.Text;
 //using System.Threading.Tasks;
-//using Microsoft.SolverFoundation.Common;
-//using Microsoft.SolverFoundation.Services;
-//using Microsoft.SolverFoundation.Solvers;
-//using System.IO;
 
 //namespace ILPTest
 //{
-//    class Program
+//    class Node
 //    {
-//        static void Main(string[] args)
+//        private static int id_counter = 0;
+//        public int ID { get; set; }
+//        public double Weight { get; set; }
+//        public int[] Dependencies { get; set; }
+
+//        public Node(int weight)
 //        {
-//            var data = new List<Task>() {
-//            new Task(){ Duration = 1, Name = "task0", Dependencies = new int[]{ } },
-//            new Task(){ Duration = 3, Name = "task1", Dependencies = new int[]{ 0 } },
-//            new Task(){ Duration = 1, Name = "task2", Dependencies = new int[]{ 0 } } ,
-//            new Task(){ Duration = 1, Name = "task3", Dependencies = new int[]{ 1,2 } }
-//            };
+//            this.ID = id_counter++;
+//            this.Weight = weight;
+//        }
+//    }
+//    class Link
+//    {
+//        public int Source { get; set; }
+//        public int Parent { get; set; }
+//        public int isDependent { get; set; }
 
+//        public Link(int task, int parent, int isDepen)
+//        {
+//            Source = task;
+//            Parent = parent;
+//            isDependent = isDepen;
+//        }
+//    }
 
-//            //var links = new List<Link>();
-//            var links = new Link[data.Count * data.Count];
+//    class Worker
+//    {
+//        private static int id_counter = 0;
+//        public int WorkerID { get; set; }
 
-//            for (int i = 0; i < data.Count; i++) {
-//                for (int j = 0; j < data.Count; j++) {
-//                    if (data[i].Dependencies.Contains(j)) {
-//                        links[i * data.Count + j] = new Link(i, j, 1);
+//        public Worker()
+//        {
+//            WorkerID = id_counter++;
+//        }
+//    }
+
+//    class ILP
+//    {
+
+//        public void run()
+//        {
+//            List<Node> nodes = new List<Node>() {
+//                new Node(2) { Dependencies = new int[] { } },
+//                new Node(1) { Dependencies = new int[] { 0 } },
+//                new Node(2) { Dependencies = new int[] { 0 } },
+//                new Node(3) { Dependencies = new int[] { 2 } },
+//                new Node(2) { Dependencies = new int[] { 1 } },
+//                new Node(2) { Dependencies = new int[] { 4,3 }},
+//                new Node(1) { Dependencies = new int[] { 0 } },
+//                new Node(2) { Dependencies = new int[] { 1 } },
+//                new Node(1) { Dependencies = new int[] { 6 } },
+//                new Node(3) { Dependencies = new int[] { 1 } }};
+
+//            var links = new Link[nodes.Count * nodes.Count];
+
+//            for (int i = 0; i < nodes.Count; i++) {
+//                for (int j = 0; j < nodes.Count; j++) {
+//                    if (nodes[i].Dependencies.Contains(j)) {
+//                        links[i * nodes.Count + j] = new Link(i, j, 1);
 //                    } else {
-//                        links[i * data.Count + j] = new Link(i, j, 0);
+//                        links[i * nodes.Count + j] = new Link(i, j, 0);
 //                    }
 //                }
 //            }
 
-//            var allocationMapping = new WorkerAllocation[4 * data.Count];
+//            List<Worker> workers = new List<Worker>() {
+//                new Worker(),
+//                new Worker(),
+//                new Worker()
+//            };
 
-
-//            for (int i = 0; i < 4; i++) {
-//                for (int j = 0; j < data.Count; j++) {
-//                    allocationMapping[i * 4 + j] = new WorkerAllocation(i, j, 0);
-//                }
-//            }
-
-
-//            Test(data, links.AsQueryable(), allocationMapping.AsEnumerable());
-//            //SolveScheduling(data, links);
-//            Console.ReadLine();
+//            Solve(nodes, links.AsEnumerable(), workers);
 //        }
 
-//        public class WorkerAllocation
-//        {
-//            public int WorkerID { get; set; }
-//            public int TaskID { get; set; }
-//            public int isAssigned { get; set; }
-//            public WorkerAllocation(int id, int task, int assign = 0)
-//            {
-//                WorkerID = id;
-//                TaskID = task;
-//                isAssigned = assign;
-//            }
-//        }
-
-
-//        public class Link
-//        {
-//            public int Source { get; set; }
-//            public int Parent { get; set; }
-//            public int isDependent { get; set; }
-
-//            public Link(int task, int parent, int isDepen)
-//            {
-//                Source = task;
-//                Parent = parent;
-//                isDependent = isDepen;
-//            }
-//        }
-
-//        public class Task
-//        {
-//            private static int id_counter = 0;
-//            public Task() { ID = id_counter++; }
-//            public int ID { get; private set; }
-//            public string Name { get; set; }
-//            public double Duration { get; set; }
-//            public int[] Dependencies { get; set; }
-//            public int[] childTasks { get; set; }
-//        }
-
-//        private static void Test(IEnumerable<Task> data, IQueryable<Link> links, IEnumerable<WorkerAllocation> alloc)
+//        private void Solve(IEnumerable<Node> nodes, IEnumerable<Link> links, IEnumerable<Worker> workers)
 //        {
 //            SolverContext context = SolverContext.GetContext();
 //            Model model = context.CreateModel();
 
-//            var taskSet = new Set(0, data.Count(), 1);
-//            var machineSet = new Set(0, 4, 1);
+//            var nodeSet = new Set(0, nodes.Count(), 1);
+//            var workerSet = new Set(0, workers.Count(), 1);
 
-//            var duration = new Parameter(Domain.IntegerNonnegative, "durations", taskSet);
-//            var id = new Parameter(Domain.IntegerNonnegative, "id", taskSet);
-//            var dependencies = new Parameter(Domain.IntegerRange(0, 1), "dependencies", taskSet, taskSet);
-
-//            duration.SetBinding(data, "Duration", "ID");
-//            id.SetBinding(data, "ID", "ID");
+//            //-------------Parameters--------------
+//            var weights = new Parameter(Domain.IntegerNonnegative, "weights", nodeSet);
+//            weights.SetBinding(nodes, "Weight", "ID");
+//            var dependencies = new Parameter(Domain.IntegerRange(0, 1), "dependencies", nodeSet, nodeSet);
 //            dependencies.SetBinding(links, "isDependent", "Source", "Parent");
 
-//            model.AddParameters(duration, id, dependencies);
+//            model.AddParameters(weights, dependencies);
 
-//            var projectFinish = new Decision(Domain.RealNonnegative, "projectFinish");
-//            var start = new Decision(Domain.RealNonnegative, "starts", taskSet);
-//            var finish = new Decision(Domain.RealNonnegative, "finishs", taskSet);
-//            var taskToMachineMapping = new Decision(Domain.RealRange(0, 1), "taskAllocations", machineSet, taskSet);
+//            //-------------Decisions--------------
+//            var startTimes = new Decision(Domain.IntegerNonnegative, "starts", nodeSet);
+//            var finishTimes = new Decision(Domain.IntegerNonnegative, "finishes", nodeSet);
+//            var makespan = new Decision(Domain.IntegerNonnegative, "makespan");
+//            var allocation = new Decision(Domain.IntegerRange(0, 1), "allocation", nodeSet, workerSet);
 
+//            model.AddDecisions(startTimes, finishTimes, makespan, allocation);
 
-//            model.AddDecisions(projectFinish, start, finish, taskToMachineMapping);
-//            taskToMachineMapping.SetBinding(alloc, "isAssigned", "WorkerID", "TaskID");
+//            //-------------Constraints--------------
+//            model.AddConstraint("FinishTime", Model.ForEach(nodeSet, (node) => startTimes[node] + weights[node] == finishTimes[node]));
 
-//            // === Constraints ===
-//            model.AddConstraint("PrecedenceConstraints", Model.ForEach(taskSet, task =>
-//                Model.ForEach(taskSet, parent =>
-//                Model.Implies(dependencies[task, parent] == 1, start[task] >= finish[parent]))));
+//            //model.AddConstraint("OneAtATime", Model.ForEach(nodeSet, (n) => 
+//            //    Model.ForEachWhere(nodeSet, (n2) => Model.Or(finishTimes[n] < startTimes[n2], startTimes[n] > finishTimes[n2]), (n2) => n != n2)));
 
-//            // start + duration = finish
-//            model.AddConstraint("constraint1", Model.ForEach(taskSet, (t) => start[t] + duration[t] == finish[t]));
+//            model.AddConstraint("Allocatee", Model.ForEach(nodeSet, (n) => Model.Sum(Model.ForEach(workerSet, (w) => allocation[n, w])) == 1));
+//            //model.AddConstraint("Allocatee", Model.ForEach(nodeSet, (n) => Model.ExactlyMofN(1,allocation[n])));
 
-//            // projectFinish after all tasks finished
-//            model.AddConstraint("constraint2", Model.ForEach(taskSet, t => projectFinish >= finish[t]));
+//            model.AddConstraint("OneAtATime",
+//                Model.ForEach(workerSet, (w) =>
+//                Model.ForEach(nodeSet, (n) =>
+//                Model.ForEachWhere(nodeSet, (n2) => Model.Implies(Model.And(allocation[n, w] == 1, allocation[n2, w] == 1),
+//                    Model.Or(finishTimes[n] <= startTimes[n2], startTimes[n] >= finishTimes[n2])), (n2) => n != n2))));
 
-//            // At most one task at each machine 
-//            model.AddConstraint("TaskMapping", Model.ForEach(taskSet, (task) => Model.Sum(Model.ForEach(machineSet, (machine) => taskToMachineMapping[machine, task])) == 1));
-//            //model.AddConstraint("Mapping", Model.ForEach(machineSet, (task) => Model.Sum(Model.ForEach(taskSet, (machine) => taskToMachineMapping[machine, task])) == 1));
+//            model.AddConstraint("PrecedenceConstraints", Model.ForEach(nodeSet, task =>
+//                Model.ForEach(nodeSet, parent =>
+//                Model.Implies(dependencies[task, parent] == 1, startTimes[task] >= finishTimes[parent]))));
 
-//            // Not more than one task at a time
-//            //model.AddConstraint("constraint3", Model.ForEach(machineSet, machine =>
-//            //    Model.ForEach(taskSet, t =>
-//            //    Model.ForEachWhere(taskSet, t2 => Model.Implies(Model.And(taskToMachineMapping[machine, t] == 1, taskToMachineMapping[machine, t2] == 1), start[t2] > finish[t]), (t2) => id[t] != id[t2]))));
+//            model.AddConstraint("ProjectFinish", Model.ForEach(nodeSet, (n) => makespan >= finishTimes[n]));
 
-//            //model.AddConstraint("constraint3", Model.ForEach(machineSet, machine =>
-//            //   Model.ForEach(taskSet, t =>
-//            //   Model.ForEachWhere(taskSet, t2 => Model.Implies(Model.And(start[t2] > start[t], start[t2] < finish[t]), taskToMachineMapping[machine, t2] == 1), (t2) => id[t] != id[t2]))));
+//            model.AddGoal("MinMakeSpan", GoalKind.Minimize, makespan);
 
-//            //model.AddConstraint("TaskExecution", Model.ForEach(machineSet, (machine) =>
-//            //    Model.ForEach(taskSet, (task) => Model.If(taskToMachineMapping[machine, task] == 1, finish[task] > 10, start[task] > 10))));
-
-
-
-//            //Model.ForEachWhere(taskSet, (task2) => Model.Implies(finish[task] > 1, Model.And(taskToMachineMapping[machine, task] == 1, taskToMachineMapping[machine, task2] == 1)), (task2) => id[task] != id[task2]))));
-
-
-//            // === Goals ===
-//            model.AddGoal("goal0", GoalKind.Minimize, projectFinish); // minimieren der projekt zeit
-
-//            // === Solve ===
 //            context.CheckModel();
-//            //using (FileStream fs = File.Open("Bicycle.mps", FileMode.OpenOrCreate))
-//            //using (StreamWriter sw = new StreamWriter(fs)) {
-//            //    context.SaveModel(FileFormat.MPS, sw); ;
+//            //using (StreamWriter sw = new StreamWriter("Stadium.oml")) {
+//            //    context.SaveModel(FileFormat.OML, sw); ;
 //            //}
 //            Solution solution = context.Solve();
 //            Report report = solution.GetReport();
 //            Console.WriteLine(@"===== report =====");
 //            Console.Write("{0}", report);
 //            Console.ReadLine();
-
 //        }
+
 //    }
 //}
