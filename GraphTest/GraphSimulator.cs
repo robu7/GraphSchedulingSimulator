@@ -117,8 +117,7 @@ namespace GraphTest
                     schedule = new HighestLevel(activeGraph, Settings.ThreadCount);
 
                     break;
-                case "ILP":
-                    break;
+
                 case "2":
                 case "CP/MISF":
                     Console.WriteLine("Executing CP/MISF ....");
@@ -133,6 +132,13 @@ namespace GraphTest
                     Reset();
                     return;
                 case "4":
+                case "ILP":
+                    Console.WriteLine("Finding optimal, might take some time ....");
+                    ILP solver = new ILP(activeGraph);
+                    solver.Solve();
+                    return;
+                    break;
+                case "5":
                 case "Seq":
                     Console.WriteLine("Executing Sequencial ....");
                     schedule = new HighestLevel(activeGraph, 1);

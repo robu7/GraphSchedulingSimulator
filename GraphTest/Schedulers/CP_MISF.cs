@@ -292,7 +292,7 @@ namespace GraphTest.Schedulers
                 sum += (t >= t_hu) && (t <= (t_hu + task.SimulatedExecutionTime))? 1 : 0;
             }
 
-            Console.WriteLine(sum +"------- " + t);
+            //Console.WriteLine(sum +"------- " + t);
             Thread.Sleep(100);
 
             return sum;
