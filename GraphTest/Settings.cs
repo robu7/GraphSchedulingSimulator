@@ -8,10 +8,10 @@ namespace GraphTest
 {
     static class Settings
     {
-        public static int minRanks = 2; // Minimum height of the graph
-        public static int maxRanks = 2; // Maximum height of the graph
-        public static int minWidth = 3; // Minimum width of the graph
-        public static int maxWidth = 3; // Maximum width of the graph
+        public static int minRanks = 50; // Minimum height of the graph
+        public static int maxRanks = 50; // Maximum height of the graph
+        public static int minWidth = 50; // Minimum width of the graph
+        public static int maxWidth = 100; // Maximum width of the graph
         public static int minSimTime = 300;
         public static int maxSimTime = 1400;
         public static double changeOfEdge = 40;

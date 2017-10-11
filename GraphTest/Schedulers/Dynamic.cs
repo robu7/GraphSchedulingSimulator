@@ -72,7 +72,7 @@ namespace GraphTest.Schedulers
         public void AddNewReadyNodes(TaskNode executedTask)
         {
             lock (readyList) {
-                readyList.AddRange(executedTask.ChildNodes.Where(x => x.IsReadyToExecute));            
+                readyList.AddRange(executedTask.ChildNodes.Where(x => x.IsReadyToExecute).ToList());            
             }
             if (readyList.Count > 0) {
                 TasksReady.Set();

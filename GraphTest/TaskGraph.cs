@@ -33,6 +33,32 @@ namespace GraphTest
             Nodes.AddRange(newNodes);
         }
 
+        public void AddNode(TaskNode newNode)
+        {
+            Nodes.Add(newNode);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void CreateEdge(TaskNode parent, TaskNode child)
+        {
+            Edges.Add(new DirectedEdge(parent, child));
+            parent.AddChild(child);
+            child.AddParent(parent);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void CreateEdge(int parentID, int childID)
+        {
+            TaskNode parent = Nodes.Find(x => x.ID == parentID);
+            TaskNode child = Nodes.Find(x => x.ID == childID);
+            CreateEdge(parent, child);
+        }
+
+
         /// <summary>
         /// Writes the graph to a .gv file with the dot format
         /// Use one of these commands to create picture with the graph:
@@ -67,16 +93,6 @@ namespace GraphTest
             process.Start();
 
             // TODO: create a process which runs the create image command
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public void CreateEdge(TaskNode parent, TaskNode child)
-        {
-            Edges.Add(new DirectedEdge(parent, child));
-            parent.AddChild(child);
-            child.AddParent(parent);
         }
 
 
@@ -259,6 +275,56 @@ namespace GraphTest
                 node.PrintNodeInfo();
             }
         }
+
+
+        public static TaskGraph CreateGraphFromFile()
+        {
+            string[] lines = System.IO.File.ReadAllLines(@"rand3500.stg");
+            TaskGraph loadedGraph = new TaskGraph();
+
+            Dictionary<TaskNode, IEnumerable<string>> dependencies = new Dictionary<TaskNode, IEnumerable<string>>();
+
+            for (int i = 1; i < lines.Count(); i++) {
+                var line = lines[i];
+
+                if (line.StartsWith("#"))
+                    break;
+
+                var lineItems = line.Split(null as char[], StringSplitOptions.RemoveEmptyEntries);
+
+                int ID = 0;
+                int weight = 0;
+                if (!int.TryParse(lineItems[0], out ID)) {
+                    Console.WriteLine("Wrong graph format, ID cannot be parsed");
+                }
+                if (!int.TryParse(lineItems[1], out weight)) {
+                    Console.WriteLine("Wrong graph format, Weight cannot be parsed");
+                }
+
+                var predecessors = lineItems.Skip(3).ToArray();
+                //foreach (var item in predecessors) {
+                //    Console.WriteLine(item);
+                //}
+                var newTaskNode = new TaskNode(ID, weight*10);
+
+                dependencies[newTaskNode] = predecessors;
+                loadedGraph.AddNode(newTaskNode);
+            }
+
+            foreach (var taskDependencies in dependencies) {
+                foreach (var dependency in taskDependencies.Value) {
+                    int predecessor = 0;
+                    if (!int.TryParse(dependency, out predecessor)) {
+                        Console.WriteLine("Wrong graph format, Predecessor cannot be parsed");
+                    }
+                    loadedGraph.CreateEdge(predecessor, taskDependencies.Key.ID);
+                }
+            }
+
+
+            return loadedGraph;
+        }
+
 
         public override string ToString()
         {

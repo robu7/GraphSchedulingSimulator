@@ -131,8 +131,9 @@ namespace GraphTest.Schedulers
                 Model.ForEach(nodeSet, parent =>
                 Model.Implies(dependencies[task, parent] == 1, startTimes[task] >= finishTimes[parent]))));
 
-            model.AddConstraint("ProjectFinish", Model.ForEach(nodeSet, (n) => makespan >= finishTimes[n]));
+            //model.AddConstraint("ProjectFinish",  Model.ForEach(nodeSet, (n) => makespan >= finishTimes[n]));
 
+            model.AddConstraint("ProjectFinish", makespan == Model.Max(Model.ForEach(nodeSet, (n) => finishTimes[n])));
             model.AddGoal("MinMakeSpan", GoalKind.Minimize, makespan);
 
             context.CheckModel();

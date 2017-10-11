@@ -92,13 +92,13 @@ namespace GraphTest
             FinishTime = earliestStartTime + SimulatedExecutionTime;
         }
 
-        public int Level {
-            get {
-                if (childNodes.Count == 0)
-                    return SimulatedExecutionTime;
-                else
-                    return childNodes.Max(x => x.Level)+ SimulatedExecutionTime;
-            } }
+        //public int Level {
+        //    get {
+        //        if (childNodes.Count == 0)
+        //            return SimulatedExecutionTime;
+        //        else
+        //            return childNodes.Max(x => x.Level)+ SimulatedExecutionTime;
+        //    } }
 
 
         public int? tLevel { get; set; }
@@ -162,9 +162,17 @@ namespace GraphTest
                 Console.WriteLine("Task {ID} is null");
                 return;
             }
-            if (parentSignals.Length > 0) {
-                WaitHandle.WaitAll(parentSignals.ToArray());
+
+            while (true) {
+                if (IsReadyToExecute) {
+                    break;
+                }
+                Thread.Sleep(10);
             }
+
+            //if (parentSignals.Length > 0) {
+            //    WaitHandle.WaitAll(parentSignals.ToArray());
+            //}
         }
 
         /// <summary>

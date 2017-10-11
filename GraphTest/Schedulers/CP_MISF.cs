@@ -293,7 +293,7 @@ namespace GraphTest.Schedulers
             }
 
             //Console.WriteLine(sum +"------- " + t);
-            Thread.Sleep(100);
+            //Thread.Sleep(100);
 
             return sum;
         }

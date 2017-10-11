@@ -61,15 +61,17 @@ namespace GraphTest
                 case "rand":
                     Console.WriteLine("Randomizing a new graph....");
                     activeGraph = TaskGraph.GenerateRandomWeightedDAG();
-                    activeGraph.PrintImage();
+                    //activeGraph.PrintImage();
                     break;
                 case "cores":
                     break;
                 case "load":
+                    activeGraph = TaskGraph.CreateGraphFromFile();
+                    //activeGraph.PrintImage();
                     break;
                 case "print":
                     Console.WriteLine("Printing graph....");
-                    activeGraph.PrintImage();
+                    //activeGraph.PrintImage();
                     activeGraph.PrintTree();
                     break;
                 case "run":
@@ -94,12 +96,21 @@ namespace GraphTest
             }
         }
 
+
+        private void ComputeSLevel()
+        {
+            activeGraph.ComputeSLevel();
+        }
+
+
         /// <summary>
         /// 
         /// </summary>
         void ExecuteAlgorithm(string arg = "")
         {
-
+            //Thread SLevelComputation = new Thread(new ThreadStart(ComputeSLevel), 15000000);
+            //SLevelComputation.Start();
+            //SLevelComputation.Join();
             activeGraph.ComputeSLevel();
             activeGraph.ComputeTLevel();
 
