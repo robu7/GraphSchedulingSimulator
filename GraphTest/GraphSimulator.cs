@@ -145,8 +145,10 @@ namespace GraphTest
                 case "4":
                 case "ILP":
                     Console.WriteLine("Finding optimal, might take some time ....");
-                    ILP solver = new ILP(activeGraph);
-                    solver.Solve();
+                    //ILP solver = new ILP(activeGraph);
+                    //solver.Solve();
+                    GurobiILP solver = new GurobiILP();
+                    solver.Run();
                     return;
                     break;
                 case "5":
